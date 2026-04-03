@@ -9,7 +9,7 @@ const aiService = require('../services/aiService');
 
 function generateNumero() {
   const year = new Date().getFullYear();
-  const count = db.prepare('SELECT COUNT(*) as c FROM devis').get().c + 1;
+  const count = Number(db.prepare('SELECT COUNT(*) as c FROM devis').get().c) + 1;
   return `DEV-${year}-${String(count).padStart(4, '0')}`;
 }
 
@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
         clientId = existingClient.id;
       } else {
         const result = db.prepare('INSERT INTO clients (name, email, address) VALUES (?, ?, ?)').run(clientName, clientEmail || '', clientAddress || '');
-        clientId = result.lastInsertRowid;
+        clientId = Number(result.lastInsertRowid);
       }
     }
 
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
       dureeJours, distanceKm, htmlContent, notes || ''
     );
 
-    const devisId = result.lastInsertRowid;
+    const devisId = Number(result.lastInsertRowid);
 
     // Sauvegarder les lignes
     if (lignes.length > 0) {
@@ -130,8 +130,8 @@ router.post('/', async (req, res) => {
       console.error('Erreur PDF (non bloquant):', pdfErr.message);
     }
 
-    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(devisId);
-    res.json({ success: true, devis, totals });
+    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(Number(devisId));
+    res.json({ success: true, id: Number(devisId), numero, devis, totals });
 
   } catch (error) {
     console.error('Erreur sauvegarde devis:', error.message);

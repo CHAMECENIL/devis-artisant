@@ -15,7 +15,8 @@ function createTransporter(settings) {
 
 async function sendDevisClient(devis, pdfBuffer, settings) {
   if (!settings?.smtp_user || !settings?.smtp_pass) {
-    throw new Error('SMTP non configuré. Allez dans Paramètres pour configurer l\'email.');
+    console.log(`[MODE DÉMO] Email devis ${devis.numero} → ${devis.client_email} (SMTP non configuré)`);
+    return { demo: true };
   }
 
   const transporter = createTransporter(settings);
