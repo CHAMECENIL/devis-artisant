@@ -1,0 +1,29 @@
+{
+  "name": "devis-artisant",
+  "version": "1.0.0",
+  "description": "Application SaaS pour artisans - Chiffrage BTP assisté par IA",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.13",
+    "uuid": "^9.0.1",
+    "puppeteer": "^22.6.0",
+    "axios": "^1.6.8",
+    "express-rate-limit": "^7.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
