@@ -12,11 +12,15 @@ function calculateTotals(devisData) {
   const lignes = devisData.lignes || [];
 
   lignes.forEach(ligne => {
-    const totalLigne = (ligne.quantite || 0) * (ligne.prixUnitaireHT || 0);
-    totalMaterials += ligne.coutMateriau ? ligne.coutMateriau * (ligne.quantite || 1) : 0;
-    totalLabor += ligne.coutMainOeuvre ? ligne.coutMainOeuvre * (ligne.quantite || 1) : 0;
-    totalCoutReel += (ligne.coutMateriau || 0) * (ligne.quantite || 1) + (ligne.coutMainOeuvre || 0) * (ligne.quantite || 1);
-    totalHeures += (ligne.heuresMO || 0) * (ligne.quantite || 1);
+    const pu  = ligne.prixUnitaireHT || ligne.prix_unitaire_ht || ligne.prix_unitaire || 0;
+    const qte = ligne.quantite || 1;
+    const mat = ligne.coutMateriau  || ligne.cout_materiau   || 0;
+    const mo  = ligne.coutMainOeuvre|| ligne.cout_main_oeuvre|| 0;
+    const hmo = ligne.heuresMO      || ligne.heures_mo       || 0;
+    totalMaterials += mat * qte;
+    totalLabor     += mo  * qte;
+    totalCoutReel  += (mat + mo) * qte;
+    totalHeures    += hmo * qte;
   });
 
   // Frais de déplacement

@@ -9,7 +9,7 @@ const aiService = require('../services/aiService');
 
 function generateNumero() {
   const year = new Date().getFullYear();
-  const count = db.prepare('SELECT COUNT(*) as c FROM devis').get().c + 1;
+  const count = Number(db.prepare('SELECT COUNT(*) as c FROM devis').get().c) + 1;
   return `DEV-${year}-${String(count).padStart(4, '0')}`;
 }
 
@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
         clientId = existingClient.id;
       } else {
         const result = db.prepare('INSERT INTO clients (name, email, address) VALUES (?, ?, ?)').run(clientName, clientEmail || '', clientAddress || '');
-        clientId = result.lastInsertRowid;
+        clientId = Number(result.lastInsertRowid);
       }
     }
 
@@ -86,7 +86,7 @@ router.post('/', async (req, res) => {
         total_materials, total_labor, total_travel,
         marge_brute, taux_marge, cout_reel, rentabilite_horaire,
         duree_jours, distance_km, html_content, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       numero, clientId, clientName || '', clientEmail || '', clientAddress || '',
       chantierAddress || '', description || '', 'draft',
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
       dureeJours, distanceKm, htmlContent, notes || ''
     );
 
-    const devisId = result.lastInsertRowid;
+    const devisId = Number(result.lastInsertRowid);
 
     // Sauvegarder les lignes
     if (lignes.length > 0) {
@@ -105,16 +105,22 @@ router.post('/', async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       lignes.forEach((ligne, i) => {
+        // Accepte camelCase ET snake_case depuis le frontend
+        const pu = ligne.prixUnitaireHT || ligne.prix_unitaire_ht || ligne.prix_unitaire || 0;
+        const qte = ligne.quantite || 0;
+        const mat = ligne.coutMateriau || ligne.cout_materiau || 0;
+        const mo  = ligne.coutMainOeuvre || ligne.cout_main_oeuvre || 0;
+        const hmo = ligne.heuresMO || ligne.heures_mo || 0;
         insertLigne.run(
           devisId,
           ligne.designation || '',
           ligne.unite || 'u',
-          ligne.quantite || 0,
-          ligne.prixUnitaireHT || 0,
-          (ligne.quantite || 0) * (ligne.prixUnitaireHT || 0),
-          ligne.coutMateriau || 0,
-          ligne.coutMainOeuvre || 0,
-          ligne.heuresMO || 0,
+          qte,
+          pu,
+          qte * pu,
+          mat,
+          mo,
+          hmo,
           ligne.notes || '',
           i
         );
@@ -130,8 +136,8 @@ router.post('/', async (req, res) => {
       console.error('Erreur PDF (non bloquant):', pdfErr.message);
     }
 
-    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(devisId);
-    res.json({ success: true, devis, totals });
+    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(Number(devisId));
+    res.json({ success: true, id: Number(devisId), numero, devis, totals });
 
   } catch (error) {
     console.error('Erreur sauvegarde devis:', error.message);

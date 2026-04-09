@@ -39,9 +39,13 @@ app.get('*', (req, res) => {
 
 // Démarrage
 app.listen(PORT, () => {
-  console.log(`\n🚀 Devis Artisant démarré sur http://localhost:${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`⚙️  Config .env requise pour IA + email\n`);
+  const { isDemoMode } = require('./services/aiService');
+  const demo = isDemoMode();
+  console.log(`\n✅ Devis Artisant démarré → http://localhost:${PORT}`);
+  console.log(demo
+    ? `⚠️  MODE DÉMO actif (pas de clé API — réponses simulées)`
+    : `🤖 IA Anthropic connectée`);
+  console.log(`📂 Ouvrez http://localhost:${PORT} dans votre navigateur\n`);
 });
 
 module.exports = app;
