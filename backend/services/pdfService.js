@@ -2,181 +2,253 @@ const path = require('path');
 const fs = require('fs');
 
 function generateDevisHTML(devisData, settings, numero) {
-  const today = new Date().toLocaleDateString('fr-FR');
-  const validite = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const validite = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   const lignes = devisData.lignes || [];
-  let totalHT = 0;
-  const tvaRate = settings?.tva_rate || devisData.tvaRate || 10;
+  const tvaRate = settings?.tva_rate ?? 10;
+  const kmRate  = settings?.km_rate  ?? 0.30;
 
-  const lignesHTML = lignes.map(ligne => {
-    const total = (ligne.quantite || 0) * (ligne.prixUnitaireHT || 0);
+  let totalHT = 0;
+  const lignesHTML = lignes.map((ligne, idx) => {
+    const pu    = ligne.prixUnitaireHT || ligne.prix_unitaire_ht || ligne.prix_unitaire || 0;
+    const qte   = ligne.quantite || 0;
+    const total = qte * pu;
     totalHT += total;
+    const bg = idx % 2 === 0 ? '#ffffff' : '#f8faff';
     return `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">${ligne.designation || ''}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${ligne.quantite || 0} ${ligne.unite || 'u'}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatEuro(ligne.prixUnitaireHT || 0)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">${formatEuro(total)}</td>
-      </tr>
-    `;
+      <tr style="background:${bg}">
+        <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;font-size:12px">${ligne.designation || ''}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:center;font-size:12px;color:#555">${qte} <span style="color:#999;font-size:11px">${ligne.unite || 'u'}</span></td>
+        <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:right;font-size:12px">${formatEuro(pu)}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:right;font-weight:700;font-size:12px;color:#1a3a6b">${formatEuro(total)}</td>
+      </tr>`;
   }).join('');
 
-  // Frais de déplacement
-  const distanceKm = parseFloat(devisData.distanceKm || 0);
-  const dureeJours = parseInt(devisData.dureeJours || 1);
-  const kmRate = settings?.km_rate || 0.30;
+  const distanceKm     = parseFloat(devisData.distanceKm || devisData.distance_km || 0);
+  const dureeJours     = parseInt(devisData.dureeJours   || devisData.duree_jours  || 1);
   const fraisDeplacement = distanceKm * 2 * kmRate * dureeJours;
+  if (fraisDeplacement > 0) totalHT += fraisDeplacement;
 
-  if (fraisDeplacement > 0) {
-    totalHT += fraisDeplacement;
-  }
-
-  const totalTVA = totalHT * (tvaRate / 100);
+  const totalTVA = totalHT * tvaRate / 100;
   const totalTTC = totalHT + totalTVA;
+
+  const clientName    = devisData.clientName    || devisData.client_name    || '';
+  const clientAddress = devisData.clientAddress || devisData.client_address || '';
+  const clientEmail   = devisData.clientEmail   || devisData.client_email   || '';
+  const chantierAddr  = devisData.chantierAddress || devisData.chantier_address || '';
+  const description   = devisData.description   || devisData.chantier_description || '';
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #333; background: white; }
-    .page { max-width: 800px; margin: 0 auto; padding: 40px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1a56db; }
-    .company-info h1 { font-size: 22px; color: #1a56db; margin-bottom: 5px; }
-    .company-info p { color: #666; line-height: 1.6; }
-    .devis-info { text-align: right; }
-    .devis-info .numero { font-size: 18px; font-weight: bold; color: #1a56db; }
-    .devis-info .date { color: #666; margin-top: 5px; }
-    .parties { display: flex; gap: 40px; margin-bottom: 30px; }
-    .partie { flex: 1; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #1a56db; }
-    .partie h3 { font-size: 11px; text-transform: uppercase; color: #1a56db; margin-bottom: 10px; letter-spacing: 1px; }
-    .partie p { line-height: 1.6; }
-    .chantier-section { background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 30px; }
-    .chantier-section h3 { font-size: 11px; text-transform: uppercase; color: #92400e; margin-bottom: 8px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    thead tr { background: #1a56db; color: white; }
-    thead th { padding: 12px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-    thead th:not(:first-child) { text-align: right; }
-    tbody tr:hover { background: #f8f9fa; }
-    .total-section { margin-left: auto; width: 300px; }
-    .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-    .total-row.tva { color: #666; }
-    .total-row.grand-total { background: #1a56db; color: white; padding: 12px 15px; border-radius: 6px; font-weight: bold; font-size: 14px; margin-top: 5px; }
-    .mentions { margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; font-size: 10px; color: #999; line-height: 1.6; }
-    .validity { background: #e8f4f8; padding: 10px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 11px; color: #1a56db; }
-    .signature-section { display: flex; gap: 40px; margin-top: 40px; }
-    .signature-box { flex: 1; border: 1px solid #ddd; padding: 20px; border-radius: 8px; min-height: 100px; }
-    .signature-box h4 { font-size: 11px; color: #666; margin-bottom: 10px; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .page{max-width:820px;margin:0 auto;padding:0}
+
+    /* BANDE COULEUR HAUT */
+    .top-bar{background:linear-gradient(135deg,#1a3a6b 0%,#1a56db 100%);height:8px}
+
+    /* HEADER */
+    .header{display:flex;justify-content:space-between;align-items:flex-start;padding:32px 40px 24px;border-bottom:1px solid #e8edf5}
+    .company-name{font-size:22px;font-weight:700;color:#1a3a6b;letter-spacing:-0.5px;margin-bottom:6px}
+    .company-details{font-size:11.5px;color:#6b7280;line-height:1.8}
+    .devis-badge{text-align:right}
+    .devis-badge .label{font-size:10px;font-weight:600;color:#1a56db;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
+    .devis-numero{font-size:24px;font-weight:800;color:#1a3a6b;letter-spacing:-0.5px}
+    .devis-dates{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.8}
+    .devis-dates strong{color:#374151}
+
+    /* PARTIES */
+    .parties{display:flex;gap:0;margin:0;border-bottom:1px solid #e8edf5}
+    .partie{flex:1;padding:20px 40px;background:#f8faff}
+    .partie:first-child{border-right:1px solid #e8edf5}
+    .partie-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#1a56db;margin-bottom:10px}
+    .partie-name{font-size:14px;font-weight:700;color:#1a3a6b;margin-bottom:4px}
+    .partie-detail{font-size:11.5px;color:#6b7280;line-height:1.7}
+
+    /* CHANTIER */
+    .chantier{background:#fffbeb;border-left:4px solid #f59e0b;padding:14px 40px;display:flex;align-items:center;gap:16px;font-size:12px}
+    .chantier-icon{font-size:18px}
+    .chantier-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#92400e;margin-bottom:2px}
+    .chantier-value{font-weight:600;color:#1a1a2e}
+    .chantier-desc{color:#6b7280;font-size:11.5px;margin-top:2px}
+
+    /* VALIDITE */
+    .validity-bar{background:#eff6ff;border-bottom:1px solid #dbeafe;padding:10px 40px;font-size:11.5px;color:#1d4ed8;display:flex;align-items:center;gap:8px}
+
+    /* TABLEAU */
+    .table-section{padding:24px 40px 0}
+    .table-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#6b7280;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse;border:1px solid #e8edf5;border-radius:8px;overflow:hidden}
+    thead tr{background:linear-gradient(135deg,#1a3a6b,#1a56db)}
+    thead th{padding:12px 14px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.9)}
+    thead th:first-child{text-align:left}
+    thead th:not(:first-child){text-align:right}
+    tfoot td{padding:10px 14px;font-size:11.5px;background:#f0f4ff;border-top:2px solid #dbeafe}
+
+    /* TOTAUX */
+    .totaux{display:flex;justify-content:flex-end;padding:20px 40px 0}
+    .totaux-box{width:300px;border:1px solid #e8edf5;border-radius:10px;overflow:hidden}
+    .total-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #f3f4f6;font-size:13px}
+    .total-row:last-child{border-bottom:none}
+    .total-row.ht{background:#f8faff;color:#374151}
+    .total-row.tva-row{background:#fff;color:#6b7280;font-size:12px}
+    .total-row.ttc{background:linear-gradient(135deg,#1a3a6b,#1a56db);color:#fff;font-weight:700;font-size:15px;padding:14px 16px}
+
+    /* SIGNATURES */
+    .signatures{display:flex;gap:24px;padding:32px 40px 0}
+    .sig-box{flex:1;border:1px solid #e8edf5;border-radius:10px;padding:20px;min-height:110px;position:relative}
+    .sig-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:#6b7280;margin-bottom:8px}
+    .sig-hint{font-size:10px;color:#9ca3af;margin-top:12px}
+    .sig-box.client{border-color:#1a56db;border-style:dashed}
+    .sig-bpa{font-size:11px;font-weight:700;color:#1a56db;margin-bottom:4px}
+
+    /* MENTIONS */
+    .mentions{padding:24px 40px;margin-top:8px;border-top:1px solid #f3f4f6;font-size:10px;color:#9ca3af;line-height:1.8}
+    .mentions strong{color:#6b7280}
+
+    /* PIED */
+    .footer{background:#f8faff;border-top:1px solid #e8edf5;padding:12px 40px;display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:#9ca3af}
+    .bottom-bar{background:linear-gradient(135deg,#1a3a6b 0%,#1a56db 100%);height:4px}
+
+    @media print{.page{max-width:100%}}
   </style>
 </head>
 <body>
 <div class="page">
+  <div class="top-bar"></div>
 
-  <!-- EN-TÊTE -->
+  <!-- HEADER -->
   <div class="header">
-    <div class="company-info">
-      <h1>${settings?.company_name || 'Nom Entreprise'}</h1>
-      <p>${settings?.company_address || 'Adresse entreprise'}</p>
-      <p>📞 ${settings?.company_phone || ''}</p>
-      <p>✉️ ${settings?.company_email || ''}</p>
-      ${settings?.company_siret ? `<p>SIRET : ${settings.company_siret}</p>` : ''}
+    <div>
+      <div class="company-name">${settings?.company_name || 'Mon Entreprise BTP'}</div>
+      <div class="company-details">
+        ${settings?.company_address ? settings.company_address + '<br>' : ''}
+        ${settings?.company_phone   ? '&#128222; ' + settings.company_phone + '&nbsp;&nbsp;' : ''}
+        ${settings?.company_email   ? '&#9993; '  + settings.company_email : ''}
+        ${settings?.company_siret   ? '<br>SIRET : ' + settings.company_siret : ''}
+      </div>
     </div>
-    <div class="devis-info">
-      <div class="numero">DEVIS N° ${numero}</div>
-      <div class="date">Date : ${today}</div>
-      <div class="date">Validité : ${validite}</div>
+    <div class="devis-badge">
+      <div class="label">Devis</div>
+      <div class="devis-numero">N° ${numero}</div>
+      <div class="devis-dates">
+        <strong>Émis le :</strong> ${today}<br>
+        <strong>Valable jusqu'au :</strong> ${validite}
+      </div>
     </div>
   </div>
 
   <!-- PARTIES -->
   <div class="parties">
     <div class="partie">
-      <h3>🏢 Prestataire</h3>
-      <p><strong>${settings?.company_name || ''}</strong></p>
-      <p>${settings?.company_address || ''}</p>
-      <p>${settings?.company_phone || ''}</p>
-      <p>${settings?.company_email || ''}</p>
+      <div class="partie-label">Prestataire</div>
+      <div class="partie-name">${settings?.company_name || ''}</div>
+      <div class="partie-detail">${settings?.company_address || ''}</div>
     </div>
     <div class="partie">
-      <h3>👤 Client</h3>
-      <p><strong>${devisData.clientName || ''}</strong></p>
-      <p>${devisData.clientAddress || ''}</p>
-      <p>${devisData.clientEmail || ''}</p>
+      <div class="partie-label">Client</div>
+      <div class="partie-name">${clientName}</div>
+      <div class="partie-detail">
+        ${clientAddress ? clientAddress + '<br>' : ''}
+        ${clientEmail   ? clientEmail : ''}
+      </div>
     </div>
   </div>
 
   <!-- CHANTIER -->
-  <div class="chantier-section">
-    <h3>🏗️ Chantier</h3>
-    <p><strong>Adresse :</strong> ${devisData.chantierAddress || ''}</p>
-    ${devisData.description ? `<p><strong>Description :</strong> ${devisData.description}</p>` : ''}
-    ${devisData.dureeJours ? `<p><strong>Durée estimée :</strong> ${devisData.dureeJours} jour(s)</p>` : ''}
+  <div class="chantier">
+    <div class="chantier-icon">&#127959;</div>
+    <div>
+      <div class="chantier-label">Adresse du chantier</div>
+      <div class="chantier-value">${chantierAddr || 'À préciser'}</div>
+      ${description ? `<div class="chantier-desc">${description}</div>` : ''}
+    </div>
+    ${dureeJours ? `<div style="margin-left:auto;text-align:right"><div class="chantier-label">Durée estimée</div><div class="chantier-value">${dureeJours} jour${dureeJours > 1 ? 's' : ''}</div></div>` : ''}
   </div>
 
-  <!-- VALIDITÉ -->
-  <div class="validity">
-    ℹ️ Ce devis est valable 30 jours à compter du ${today}
+  <!-- BARRE VALIDITÉ -->
+  <div class="validity-bar">
+    &#8505;&#65039;&nbsp; Ce devis est valable 30 jours — jusqu'au <strong style="margin-left:4px">${validite}</strong>
   </div>
 
-  <!-- TABLEAU DES PRESTATIONS -->
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 50%">Désignation des travaux</th>
-        <th style="width: 15%; text-align: right;">Quantité</th>
-        <th style="width: 15%; text-align: right;">PU HT</th>
-        <th style="width: 20%; text-align: right;">Total HT</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${lignesHTML}
-      ${fraisDeplacement > 0 ? `
-      <tr style="background: #fff9e6;">
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">🚗 Frais de déplacement (${distanceKm} km × 2 × ${kmRate}€ × ${dureeJours} j)</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">1 forfait</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${formatEuro(fraisDeplacement)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">${formatEuro(fraisDeplacement)}</td>
-      </tr>
-      ` : ''}
-    </tbody>
-  </table>
+  <!-- TABLEAU -->
+  <div class="table-section">
+    <div class="table-title">Détail des prestations</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:50%;text-align:left">Désignation des travaux</th>
+          <th style="width:13%">Quantité</th>
+          <th style="width:17%">Prix unit. HT</th>
+          <th style="width:20%">Total HT</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${lignesHTML}
+        ${fraisDeplacement > 0 ? `
+        <tr style="background:#fffbeb">
+          <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;font-size:12px;color:#92400e">
+            &#128663; Frais de déplacement <span style="font-size:10.5px;color:#b45309">(${distanceKm} km A/R × ${kmRate} €/km × ${dureeJours} j)</span>
+          </td>
+          <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:center;font-size:12px">1 forfait</td>
+          <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:right;font-size:12px">${formatEuro(fraisDeplacement)}</td>
+          <td style="padding:11px 14px;border-bottom:1px solid #e8edf5;text-align:right;font-weight:700;font-size:12px;color:#92400e">${formatEuro(fraisDeplacement)}</td>
+        </tr>` : ''}
+      </tbody>
+    </table>
+  </div>
 
   <!-- TOTAUX -->
-  <div class="total-section">
-    <div class="total-row">
-      <span>Total HT</span>
-      <strong>${formatEuro(totalHT)}</strong>
-    </div>
-    <div class="total-row tva">
-      <span>TVA ${tvaRate}%</span>
-      <span>${formatEuro(totalTVA)}</span>
-    </div>
-    <div class="total-row grand-total">
-      <span>TOTAL TTC</span>
-      <span>${formatEuro(totalTTC)}</span>
+  <div class="totaux">
+    <div class="totaux-box">
+      <div class="total-row ht">
+        <span>Total HT</span>
+        <strong>${formatEuro(totalHT)}</strong>
+      </div>
+      <div class="total-row tva-row">
+        <span>TVA ${tvaRate}%</span>
+        <span>${formatEuro(totalTVA)}</span>
+      </div>
+      <div class="total-row ttc">
+        <span>TOTAL TTC</span>
+        <span>${formatEuro(totalTTC)}</span>
+      </div>
     </div>
   </div>
 
   <!-- SIGNATURES -->
-  <div class="signature-section">
-    <div class="signature-box">
-      <h4>Signature de l'entreprise</h4>
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-label">Signature de l'entreprise</div>
+      <div class="sig-hint">Cachet + signature</div>
     </div>
-    <div class="signature-box">
-      <h4>Bon pour accord (client) — Date et signature</h4>
+    <div class="sig-box client">
+      <div class="sig-bpa">Bon pour accord</div>
+      <div class="sig-label">Signature du client</div>
+      <div class="sig-hint">Date, mention « Bon pour accord » + signature</div>
     </div>
   </div>
 
-  <!-- MENTIONS LÉGALES -->
+  <!-- MENTIONS -->
   <div class="mentions">
-    <p>Règlement : 30% à la commande, solde à la réception des travaux. Paiement par virement ou chèque.</p>
-    <p>En cas de litige, tribunal compétent : ${settings?.company_address?.split(',').pop()?.trim() || 'lieu du siège social'}.</p>
-    <p>Taux de pénalité pour retard de paiement : 3 fois le taux d'intérêt légal. Indemnité forfaitaire de recouvrement : 40 €.</p>
-    ${settings?.company_siret ? `<p>SIRET : ${settings.company_siret}</p>` : ''}
+    <strong>Conditions de règlement :</strong> 30 % d'acompte à la commande, solde à réception des travaux. Virement bancaire ou chèque.<br>
+    <strong>Pénalités de retard :</strong> Tout retard de paiement entraîne une pénalité égale à 3 fois le taux d'intérêt légal en vigueur, avec une indemnité forfaitaire de recouvrement de 40 €.<br>
+    <strong>Garanties :</strong> Garantie décennale et garantie biennale applicables conformément à la réglementation en vigueur.
+    ${settings?.company_siret ? `<br><strong>SIRET :</strong> ${settings.company_siret}` : ''}
   </div>
 
+  <!-- PIED DE PAGE -->
+  <div class="footer">
+    <span>${settings?.company_name || ''} — Devis N° ${numero}</span>
+    <span>Document généré le ${today}</span>
+  </div>
+  <div class="bottom-bar"></div>
 </div>
 </body>
 </html>`;

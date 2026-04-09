@@ -86,7 +86,7 @@ router.post('/', async (req, res) => {
         total_materials, total_labor, total_travel,
         marge_brute, taux_marge, cout_reel, rentabilite_horaire,
         duree_jours, distance_km, html_content, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       numero, clientId, clientName || '', clientEmail || '', clientAddress || '',
       chantierAddress || '', description || '', 'draft',
@@ -105,16 +105,22 @@ router.post('/', async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       lignes.forEach((ligne, i) => {
+        // Accepte camelCase ET snake_case depuis le frontend
+        const pu = ligne.prixUnitaireHT || ligne.prix_unitaire_ht || ligne.prix_unitaire || 0;
+        const qte = ligne.quantite || 0;
+        const mat = ligne.coutMateriau || ligne.cout_materiau || 0;
+        const mo  = ligne.coutMainOeuvre || ligne.cout_main_oeuvre || 0;
+        const hmo = ligne.heuresMO || ligne.heures_mo || 0;
         insertLigne.run(
           devisId,
           ligne.designation || '',
           ligne.unite || 'u',
-          ligne.quantite || 0,
-          ligne.prixUnitaireHT || 0,
-          (ligne.quantite || 0) * (ligne.prixUnitaireHT || 0),
-          ligne.coutMateriau || 0,
-          ligne.coutMainOeuvre || 0,
-          ligne.heuresMO || 0,
+          qte,
+          pu,
+          qte * pu,
+          mat,
+          mo,
+          hmo,
           ligne.notes || '',
           i
         );
