@@ -1,158 +1,103 @@
 /* =============================================
-   APP — Routeur principal + utilitaires globaux
+   APP — Router SPA + init globale
    ============================================= */
 
-// ---- TOAST ----
-const Toast = {
-  show(message, type = 'info', duration = 3500) {
-    const container = document.getElementById('toast-container');
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
+(function () {
+  const sections = ['chat', 'devis', 'dashboard', 'history', 'kanban', 'reminders', 'settings'];
+  let current = 'chat';
 
-    const icons = {
-      success: '✓',
-      error: '✕',
-      warning: '⚠',
-      info: 'ℹ'
-    };
+  function navigate(section) {
+    if (!sections.includes(section)) section = 'chat';
+    current = section;
 
-    el.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${message}</span>`;
-    container.appendChild(el);
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.section === section));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === `section-${section}`));
 
-    setTimeout(() => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateX(20px)';
-      el.style.transition = 'opacity 0.3s, transform 0.3s';
-      setTimeout(() => el.remove(), 300);
-    }, duration);
-  },
-
-  success: (msg) => Toast.show(msg, 'success'),
-  error:   (msg) => Toast.show(msg, 'error', 5000),
-  warning: (msg) => Toast.show(msg, 'warning'),
-  info:    (msg) => Toast.show(msg, 'info')
-};
-
-// ---- MODAL ----
-const Modal = {
-  open(title, bodyHTML, footerHTML = '') {
-    document.getElementById('modal-title').textContent = title;
-    document.getElementById('modal-body').innerHTML = bodyHTML;
-    document.getElementById('modal-footer').innerHTML = footerHTML;
-    document.getElementById('modal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  },
-
-  close() {
-    document.getElementById('modal').style.display = 'none';
-    document.body.style.overflow = '';
-    document.getElementById('modal-body').innerHTML = '';
-    document.getElementById('modal-footer').innerHTML = '';
-  },
-
-  openPDF(devisId, numero = '') {
-    const pdfUrl = `/api/devis/${devisId}/pdf`;
-    const rentaUrl = `/api/devis/${devisId}/rentabilite`;
-
-    Modal.open(
-      `Devis ${numero || '#' + devisId}`,
-      `<iframe src="${pdfUrl}" title="Devis PDF"></iframe>`,
-      `
-        <a class="btn btn-outline" href="${pdfUrl}" target="_blank" download>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Télécharger PDF
-        </a>
-        <a class="btn btn-outline" href="${rentaUrl}" target="_blank">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          Fiche rentabilité
-        </a>
-        <button class="btn btn-primary" onclick="sendDevis(${devisId})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Envoyer au client
-        </button>
-      `
-    );
+    // Init lazy au premier accès
+    if (section === 'dashboard' && typeof Dashboard !== 'undefined') Dashboard.load();
+    if (section === 'history' && typeof History !== 'undefined') History.load();
+    if (section === 'kanban' && typeof Kanban !== 'undefined') Kanban.load();
+    if (section === 'reminders' && typeof Reminders !== 'undefined') Reminders.load();
   }
-};
 
-// ---- GLOBAL sendDevis ----
-async function sendDevis(id) {
-  if (!confirm('Envoyer ce devis par email au client ?')) return;
-  try {
-    await API.devis.send(id);
-    Toast.success('Devis envoyé au client');
-    Modal.close();
-    History.load();
-  } catch (err) {
-    Toast.error(`Erreur d'envoi : ${err.message}`);
-  }
-}
+  // Expose App globally
+  window.App = { navigate };
 
-// ---- ROUTER ----
-const App = {
-  currentSection: 'chat',
-  initialized: {},
+  // Navigation sidebar
+  document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+    item.addEventListener('click', () => navigate(item.dataset.section));
+  });
 
-  navigate(section) {
-    // Masquer toutes les sections
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-    // Afficher la section cible
-    const sectionEl = document.getElementById(`section-${section}`);
-    const navEl = document.querySelector(`.nav-item[data-section="${section}"]`);
-
-    if (!sectionEl) return;
-
-    sectionEl.classList.add('active');
-    if (navEl) navEl.classList.add('active');
-
-    this.currentSection = section;
-
-    // Initialiser si première visite
-    if (!this.initialized[section]) {
-      this.initialized[section] = true;
-      this.initSection(section);
-    } else {
-      // Recharger les sections à données dynamiques
-      if (section === 'dashboard') Dashboard.load();
-      if (section === 'history') History.load();
-      if (section === 'settings') Settings.load();
+  // =====================
+  // MODAL
+  // =====================
+  const Modal = window.Modal = {
+    open(title, bodyHtml, footerHtml = '') {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').innerHTML = bodyHtml;
+      document.getElementById('modal-footer').innerHTML = footerHtml;
+      document.getElementById('modal').style.display = 'flex';
+    },
+    close() { document.getElementById('modal').style.display = 'none'; },
+    openPDF(devisId) {
+      const url = API.devis.pdfUrl(devisId);
+      Modal.open('Aperçu du devis',
+        `<iframe src="${url}" style="width:100%;height:65vh;border:none;border-radius:6px"></iframe>`,
+        `<a href="${url}" target="_blank" class="btn btn-primary btn-sm">Télécharger PDF</a>
+         <a href="${API.devis.rentabiliteUrl(devisId)}" target="_blank" class="btn btn-outline btn-sm">Fiche rentabilité</a>
+         <button class="btn btn-outline btn-sm" onclick="Modal.close()">Fermer</button>`
+      );
     }
-  },
+  };
 
-  initSection(section) {
-    switch (section) {
-      case 'chat':      Chat.init(); break;
-      case 'devis':     Devis.init(); break;
-      case 'dashboard': Dashboard.init(); break;
-      case 'history':   History.init(); break;
-      case 'settings':  Settings.init(); break;
+  document.getElementById('modal-close')?.addEventListener('click', Modal.close);
+  document.getElementById('modal-overlay')?.addEventListener('click', Modal.close);
+
+  // =====================
+  // TOAST
+  // =====================
+  const Toast = window.Toast = {
+    show(msg, type = 'info', duration = 4000) {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.innerHTML = msg;
+      container.appendChild(el);
+      setTimeout(() => el.classList.add('show'), 10);
+      setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, duration);
+    },
+    success: (m) => Toast.show(m, 'success'),
+    error: (m) => Toast.show(m, 'error'),
+    info: (m) => Toast.show(m, 'info'),
+    warning: (m) => Toast.show(m, 'warning')
+  };
+
+  // =====================
+  // STATUS SIDEBAR
+  // =====================
+  async function checkStatus() {
+    try {
+      await fetch('/api/settings');
+      document.getElementById('sidebar-status').textContent = 'Prêt';
+      document.querySelector('.status-indicator').style.background = '#22c55e';
+    } catch {
+      document.getElementById('sidebar-status').textContent = 'Hors ligne';
+      document.querySelector('.status-indicator').style.background = '#ef4444';
     }
-  },
-
-  init() {
-    // Sidebar navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.navigate(item.dataset.section);
-      });
-    });
-
-    // Modal close
-    document.getElementById('modal-close').addEventListener('click', Modal.close);
-    document.getElementById('modal-overlay').addEventListener('click', Modal.close);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') Modal.close();
-    });
-
-    // Démarrer sur chat
-    this.navigate('chat');
   }
-};
 
-// ---- DÉMARRAGE ----
-document.addEventListener('DOMContentLoaded', () => {
-  App.init();
-});
+  // =====================
+  // INIT
+  // =====================
+  document.addEventListener('DOMContentLoaded', () => {
+    Chat.init();
+    Devis.init();
+    Dashboard.init();
+    History.init();
+    Kanban.init();
+    Reminders.init();
+    Settings.init();
+    checkStatus();
+    navigate('chat');
+  });
+})();

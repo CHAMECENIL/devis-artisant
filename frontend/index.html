@@ -24,8 +24,12 @@
         Chat IA
       </a>
       <a class="nav-item" data-section="devis">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Nouveau Devis
+      </a>
+      <a class="nav-item" data-section="kanban">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="12"/><rect x="17" y="3" width="5" height="7"/></svg>
+        Kanban
       </a>
       <a class="nav-item" data-section="dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -34,6 +38,10 @@
       <a class="nav-item" data-section="history">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 11 11 11"/></svg>
         Historique
+      </a>
+      <a class="nav-item" data-section="reminders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Relances
       </a>
       <a class="nav-item" data-section="settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -47,7 +55,7 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
+  <!-- MAIN -->
   <main id="main">
 
     <!-- ===== CHAT ===== -->
@@ -68,7 +76,6 @@
           </button>
         </div>
       </div>
-
       <div class="chat-layout">
         <div class="chat-main">
           <div id="chat-messages" class="chat-messages">
@@ -86,13 +93,11 @@
               </div>
             </div>
           </div>
-
           <div id="chat-image-preview" class="chat-image-preview" style="display:none">
             <img id="chat-preview-img" src="" alt="Preview">
             <button id="btn-remove-image" class="btn-remove">×</button>
             <span id="chat-preview-name" class="preview-name"></span>
           </div>
-
           <div class="chat-input-area">
             <input type="file" id="chat-file-input" accept="image/*,.pdf" hidden>
             <button class="btn-icon" id="btn-chat-attach" title="Joindre un fichier">
@@ -113,54 +118,29 @@
     <!-- ===== DEVIS ===== -->
     <section id="section-devis" class="section">
       <div class="section-header">
-        <div>
-          <h1>Nouveau Devis</h1>
-          <p class="section-subtitle">Génération assistée par IA ou saisie manuelle</p>
-        </div>
+        <div><h1>Nouveau Devis</h1><p class="section-subtitle">Génération assistée par IA ou saisie manuelle</p></div>
       </div>
-
       <div class="devis-layout">
         <div class="devis-tabs">
           <button class="tab-btn active" data-tab="ai">Génération IA</button>
           <button class="tab-btn" data-tab="manual">Saisie manuelle</button>
         </div>
-
-        <!-- TAB IA -->
         <div id="tab-ai" class="tab-content active">
           <div class="devis-form-card">
             <h3>Informations client & chantier</h3>
             <div class="form-grid">
-              <div class="form-group">
-                <label>Nom client *</label>
-                <input type="text" id="ai-client-name" placeholder="M. Dupont">
-              </div>
-              <div class="form-group">
-                <label>Email client</label>
-                <input type="email" id="ai-client-email" placeholder="client@email.fr">
-              </div>
-              <div class="form-group">
-                <label>Adresse client</label>
-                <input type="text" id="ai-client-address" placeholder="12 rue de la Paix, 75001 Paris">
-              </div>
-              <div class="form-group">
-                <label>Adresse chantier *</label>
-                <input type="text" id="ai-chantier-address" placeholder="Adresse du chantier">
-              </div>
+              <div class="form-group"><label>Nom client *</label><input type="text" id="ai-client-name" placeholder="M. Dupont"></div>
+              <div class="form-group"><label>Email client</label><input type="email" id="ai-client-email" placeholder="client@email.fr"></div>
+              <div class="form-group"><label>Adresse client</label><input type="text" id="ai-client-address" placeholder="12 rue de la Paix, 75001 Paris"></div>
+              <div class="form-group"><label>Adresse chantier *</label><input type="text" id="ai-chantier-address" placeholder="Adresse du chantier"></div>
             </div>
-            <div class="form-group">
-              <label>Description du projet *</label>
-              <textarea id="ai-description" rows="4" placeholder="Ex: Réfection complète salle de bain 8m² — dépose carrelage existant, pose nouveau carrelage sol et murs, remplacement sanitaires, plomberie..."></textarea>
-            </div>
-            <div class="form-group">
-              <label>Notes internes (optionnel)</label>
-              <input type="text" id="ai-notes" placeholder="Notes internes non visibles sur le devis">
-            </div>
+            <div class="form-group"><label>Description du projet *</label><textarea id="ai-description" rows="4" placeholder="Ex: Réfection complète salle de bain 8m²..."></textarea></div>
+            <div class="form-group"><label>Notes internes (optionnel)</label><input type="text" id="ai-notes" placeholder="Notes internes non visibles sur le devis"></div>
             <button class="btn btn-primary btn-lg" id="btn-ai-generate">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
               Générer avec l'IA
             </button>
           </div>
-
           <div id="ai-result" class="ai-result" style="display:none">
             <div class="ai-result-header">
               <h3>Résultat de l'IA</h3>
@@ -172,69 +152,27 @@
             <div id="ai-response-content" class="ai-response-content"></div>
           </div>
         </div>
-
-        <!-- TAB MANUEL -->
         <div id="tab-manual" class="tab-content">
           <div class="devis-form-card">
             <h3>Informations client & chantier</h3>
             <div class="form-grid">
-              <div class="form-group">
-                <label>Nom client *</label>
-                <input type="text" id="m-client-name" placeholder="M. Dupont">
-              </div>
-              <div class="form-group">
-                <label>Email client</label>
-                <input type="email" id="m-client-email" placeholder="client@email.fr">
-              </div>
-              <div class="form-group">
-                <label>Adresse client</label>
-                <input type="text" id="m-client-address" placeholder="12 rue de la Paix, 75001 Paris">
-              </div>
-              <div class="form-group">
-                <label>Adresse chantier *</label>
-                <input type="text" id="m-chantier-address" placeholder="Adresse du chantier">
-              </div>
-              <div class="form-group">
-                <label>Distance (km)</label>
-                <input type="number" id="m-distance" placeholder="25" min="0" step="0.1">
-              </div>
-              <div class="form-group">
-                <label>Durée estimée (jours)</label>
-                <input type="number" id="m-duree" placeholder="3" min="1" step="1">
-              </div>
+              <div class="form-group"><label>Nom client *</label><input type="text" id="m-client-name" placeholder="M. Dupont"></div>
+              <div class="form-group"><label>Email client</label><input type="email" id="m-client-email" placeholder="client@email.fr"></div>
+              <div class="form-group"><label>Adresse client</label><input type="text" id="m-client-address" placeholder="12 rue de la Paix, 75001 Paris"></div>
+              <div class="form-group"><label>Adresse chantier *</label><input type="text" id="m-chantier-address" placeholder="Adresse du chantier"></div>
+              <div class="form-group"><label>Distance (km)</label><input type="number" id="m-distance" placeholder="25" min="0" step="0.1"></div>
+              <div class="form-group"><label>Durée estimée (jours)</label><input type="number" id="m-duree" placeholder="3" min="1" step="1"></div>
             </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea id="m-description" rows="2" placeholder="Description générale des travaux"></textarea>
-            </div>
+            <div class="form-group"><label>Description</label><textarea id="m-description" rows="2" placeholder="Description générale des travaux"></textarea></div>
           </div>
-
           <div class="devis-form-card">
-            <div class="card-header-row">
-              <h3>Lignes du devis</h3>
-              <button class="btn btn-outline btn-sm" id="btn-add-ligne">+ Ajouter une ligne</button>
-            </div>
+            <div class="card-header-row"><h3>Lignes du devis</h3><button class="btn btn-outline btn-sm" id="btn-add-ligne">+ Ajouter une ligne</button></div>
             <div id="lignes-container">
-              <div class="lignes-header">
-                <span>Désignation</span>
-                <span>Qté</span>
-                <span>Unité</span>
-                <span>PU HT (€)</span>
-                <span>Total HT</span>
-                <span>Coût mat.</span>
-                <span>Heures MO</span>
-                <span></span>
-              </div>
+              <div class="lignes-header"><span>Désignation</span><span>Qté</span><span>Unité</span><span>PU HT (€)</span><span>Total HT</span><span>Coût mat.</span><span>Heures MO</span><span></span></div>
               <div id="lignes-list"></div>
             </div>
-
-            <div class="form-group" style="margin-top:1rem">
-              <label>Notes internes</label>
-              <input type="text" id="m-notes" placeholder="Notes internes non visibles sur le devis">
-            </div>
-
+            <div class="form-group" style="margin-top:1rem"><label>Notes internes</label><input type="text" id="m-notes" placeholder="Notes internes non visibles sur le devis"></div>
             <div class="devis-totals" id="manual-totals"></div>
-
             <div class="form-actions">
               <button class="btn btn-outline" id="btn-manual-preview">Aperçu</button>
               <button class="btn btn-primary" id="btn-manual-save">Enregistrer le devis</button>
@@ -244,105 +182,77 @@
       </div>
     </section>
 
+    <!-- ===== KANBAN ===== -->
+    <section id="section-kanban" class="section">
+      <div class="section-header">
+        <div>
+          <h1>Kanban — Suivi des projets</h1>
+          <p class="section-subtitle">Glissez les projets entre les étapes pour mettre à jour leur avancement</p>
+        </div>
+        <button class="btn btn-outline" id="btn-refresh-kanban">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualiser
+        </button>
+      </div>
+      <div id="kanban-board" class="kanban-board"></div>
+    </section>
+
     <!-- ===== DASHBOARD ===== -->
     <section id="section-dashboard" class="section">
       <div class="section-header">
-        <div>
-          <h1>Dashboard</h1>
-          <p class="section-subtitle">Analyse de votre activité et rentabilité</p>
-        </div>
+        <div><h1>Dashboard</h1><p class="section-subtitle">Analyse de votre activité et rentabilité</p></div>
         <button class="btn btn-outline" id="btn-refresh-dashboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Actualiser
         </button>
       </div>
-
       <div id="dashboard-kpis" class="kpi-grid"></div>
-
       <div class="charts-grid">
-        <div class="chart-card">
-          <h3>Chiffre d'affaires mensuel</h3>
-          <canvas id="chart-ca"></canvas>
-        </div>
-        <div class="chart-card chart-card-sm">
-          <h3>Répartition des statuts</h3>
-          <canvas id="chart-statuts"></canvas>
-        </div>
-        <div class="chart-card chart-card-sm">
-          <h3>Distribution des marges</h3>
-          <canvas id="chart-marges"></canvas>
-        </div>
+        <div class="chart-card"><h3>Chiffre d'affaires mensuel</h3><canvas id="chart-ca"></canvas></div>
+        <div class="chart-card chart-card-sm"><h3>Répartition des statuts</h3><canvas id="chart-statuts"></canvas></div>
+        <div class="chart-card chart-card-sm"><h3>Distribution des marges</h3><canvas id="chart-marges"></canvas></div>
       </div>
-
       <div class="dashboard-bottom">
-        <div class="card">
-          <h3>Top clients</h3>
-          <div id="top-clients-list"></div>
-        </div>
-        <div class="card">
-          <h3>Devis récents</h3>
-          <div id="recent-devis-list"></div>
-        </div>
+        <div class="card"><h3>Top clients</h3><div id="top-clients-list"></div></div>
+        <div class="card"><h3>Devis récents</h3><div id="recent-devis-list"></div></div>
       </div>
     </section>
 
     <!-- ===== HISTORY ===== -->
     <section id="section-history" class="section">
       <div class="section-header">
-        <div>
-          <h1>Historique</h1>
-          <p class="section-subtitle">Tous vos devis classés et filtrables</p>
-        </div>
+        <div><h1>Historique</h1><p class="section-subtitle">Tous vos devis — téléchargement, signature, relances</p></div>
       </div>
-
       <div class="history-filters card">
         <div class="filter-row">
-          <div class="filter-group">
-            <label>Recherche</label>
-            <input type="text" id="filter-search" placeholder="Client, numéro...">
-          </div>
+          <div class="filter-group"><label>Recherche</label><input type="text" id="filter-search" placeholder="Client, numéro..."></div>
           <div class="filter-group">
             <label>Statut</label>
             <select id="filter-status">
               <option value="">Tous les statuts</option>
               <option value="draft">Brouillon</option>
               <option value="sent">Envoyé</option>
+              <option value="signed">Signé</option>
               <option value="accepted">Accepté</option>
               <option value="rejected">Refusé</option>
               <option value="archived">Archivé</option>
             </select>
           </div>
-          <div class="filter-group">
-            <label>Du</label>
-            <input type="date" id="filter-date-from">
-          </div>
-          <div class="filter-group">
-            <label>Au</label>
-            <input type="date" id="filter-date-to">
-          </div>
-          <div class="filter-group">
-            <label>Marge min (%)</label>
-            <input type="number" id="filter-marge-min" placeholder="0" min="0" max="100">
-          </div>
+          <div class="filter-group"><label>Du</label><input type="date" id="filter-date-from"></div>
+          <div class="filter-group"><label>Au</label><input type="date" id="filter-date-to"></div>
+          <div class="filter-group"><label>Marge min (%)</label><input type="number" id="filter-marge-min" placeholder="0" min="0" max="100"></div>
           <div class="filter-group filter-actions">
             <button class="btn btn-primary" id="btn-apply-filters">Filtrer</button>
             <button class="btn btn-outline" id="btn-reset-filters">Reset</button>
           </div>
         </div>
       </div>
-
       <div class="card table-card">
         <table class="data-table" id="history-table">
           <thead>
             <tr>
-              <th>N° Devis</th>
-              <th>Client</th>
-              <th>Chantier</th>
-              <th>Total TTC</th>
-              <th>Marge</th>
-              <th>Statut</th>
-              <th>Date</th>
-              <th>Actions</th>
+              <th>N° Devis</th><th>Client</th><th>Chantier</th><th>Total TTC</th>
+              <th>Marge</th><th>Statut</th><th>Date</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -355,104 +265,65 @@
       </div>
     </section>
 
+    <!-- ===== RELANCES ===== -->
+    <section id="section-reminders" class="section">
+      <div class="section-header">
+        <div><h1>Relances email</h1><p class="section-subtitle">Configurez vos modèles de relance automatique</p></div>
+      </div>
+      <div class="reminders-info card" style="margin-bottom:20px;padding:16px;background:#eff6ff;border:1px solid #bfdbfe">
+        <p style="color:#1e40af;font-size:14px">
+          💡 <strong>Comment utiliser :</strong> Personnalisez les messages ci-dessous, puis depuis l'<strong>Historique</strong> cliquez sur le bouton <strong>Relance▾</strong> de chaque devis pour envoyer la relance souhaitée.
+          Variables disponibles : <code>{{client_name}}</code>, <code>{{numero}}</code>, <code>{{total_ttc}}</code>, <code>{{company_name}}</code>, <code>{{signature_link}}</code>
+        </p>
+      </div>
+      <div id="reminders-container" class="reminders-grid"></div>
+    </section>
+
     <!-- ===== SETTINGS ===== -->
     <section id="section-settings" class="section">
       <div class="section-header">
-        <div>
-          <h1>Paramètres</h1>
-          <p class="section-subtitle">Configuration de votre entreprise et intégrations</p>
-        </div>
+        <div><h1>Paramètres</h1><p class="section-subtitle">Configuration de votre entreprise et intégrations</p></div>
         <button class="btn btn-primary" id="btn-save-settings">Enregistrer</button>
       </div>
-
       <div class="settings-grid">
-        <!-- Entreprise -->
         <div class="settings-card card">
           <div class="settings-card-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <h3>Entreprise</h3>
           </div>
           <div class="form-grid">
-            <div class="form-group">
-              <label>Nom de l'entreprise</label>
-              <input type="text" id="s-company-name" placeholder="Mon Entreprise BTP">
-            </div>
-            <div class="form-group">
-              <label>SIRET</label>
-              <input type="text" id="s-siret" placeholder="12345678901234">
-            </div>
-            <div class="form-group">
-              <label>Téléphone</label>
-              <input type="text" id="s-phone" placeholder="06 12 34 56 78">
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="s-email" placeholder="contact@entreprise.fr">
-            </div>
-            <div class="form-group form-group-full">
-              <label>Adresse</label>
-              <input type="text" id="s-address" placeholder="1 Rue de la Paix, 75001 Paris">
-            </div>
-            <div class="form-group form-group-full">
-              <label>Adresse dépôt / entrepôt</label>
-              <input type="text" id="s-depot" placeholder="Adresse de votre entrepôt (départ chantiers)">
-            </div>
+            <div class="form-group"><label>Nom de l'entreprise</label><input type="text" id="s-company-name" placeholder="Mon Entreprise BTP"></div>
+            <div class="form-group"><label>SIRET</label><input type="text" id="s-siret" placeholder="12345678901234"></div>
+            <div class="form-group"><label>Téléphone</label><input type="text" id="s-phone" placeholder="06 12 34 56 78"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="s-email" placeholder="contact@entreprise.fr"></div>
+            <div class="form-group form-group-full"><label>Adresse</label><input type="text" id="s-address" placeholder="1 Rue de la Paix, 75001 Paris"></div>
+            <div class="form-group form-group-full"><label>Adresse dépôt / entrepôt</label><input type="text" id="s-depot" placeholder="Adresse de votre entrepôt"></div>
           </div>
         </div>
-
-        <!-- Tarification -->
         <div class="settings-card card">
           <div class="settings-card-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             <h3>Tarification</h3>
           </div>
           <div class="form-grid">
-            <div class="form-group">
-              <label>Taux horaire MO (€/h)</label>
-              <input type="number" id="s-hourly-rate" placeholder="15" min="0" step="0.5">
-            </div>
-            <div class="form-group">
-              <label>Marge matériaux (%)</label>
-              <input type="number" id="s-margin" placeholder="30" min="0" max="200" step="1">
-            </div>
-            <div class="form-group">
-              <label>Coût kilométrique (€/km)</label>
-              <input type="number" id="s-km-rate" placeholder="0.30" min="0" step="0.01">
-            </div>
-            <div class="form-group">
-              <label>TVA par défaut (%)</label>
-              <input type="number" id="s-tva" placeholder="10" min="0" max="100" step="0.1">
-            </div>
+            <div class="form-group"><label>Taux horaire MO (€/h)</label><input type="number" id="s-hourly-rate" placeholder="15" min="0" step="0.5"></div>
+            <div class="form-group"><label>Marge matériaux (%)</label><input type="number" id="s-margin" placeholder="30" min="0" max="200" step="1"></div>
+            <div class="form-group"><label>Coût kilométrique (€/km)</label><input type="number" id="s-km-rate" placeholder="0.30" min="0" step="0.01"></div>
+            <div class="form-group"><label>TVA par défaut (%)</label><input type="number" id="s-tva" placeholder="10" min="0" max="100" step="0.1"></div>
           </div>
         </div>
-
-        <!-- Email SMTP -->
         <div class="settings-card card">
           <div class="settings-card-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <h3>Email (SMTP)</h3>
           </div>
           <div class="form-grid">
-            <div class="form-group">
-              <label>Serveur SMTP</label>
-              <input type="text" id="s-smtp-host" placeholder="smtp.gmail.com">
-            </div>
-            <div class="form-group">
-              <label>Port</label>
-              <input type="number" id="s-smtp-port" placeholder="587">
-            </div>
-            <div class="form-group">
-              <label>Utilisateur</label>
-              <input type="text" id="s-smtp-user" placeholder="vous@gmail.com">
-            </div>
-            <div class="form-group">
-              <label>Mot de passe</label>
-              <input type="password" id="s-smtp-pass" placeholder="••••••••">
-            </div>
+            <div class="form-group"><label>Serveur SMTP</label><input type="text" id="s-smtp-host" placeholder="smtp.gmail.com"></div>
+            <div class="form-group"><label>Port</label><input type="number" id="s-smtp-port" placeholder="587"></div>
+            <div class="form-group"><label>Utilisateur</label><input type="text" id="s-smtp-user" placeholder="vous@gmail.com"></div>
+            <div class="form-group"><label>Mot de passe</label><input type="password" id="s-smtp-pass" placeholder="••••••••"></div>
           </div>
         </div>
-
-        <!-- API Keys -->
         <div class="settings-card card">
           <div class="settings-card-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
@@ -460,18 +331,12 @@
           </div>
           <div class="form-group">
             <label>Clé API Anthropic (Claude)</label>
-            <div class="input-with-btn">
-              <input type="password" id="s-anthropic-key" placeholder="sk-ant-...">
-              <button class="btn btn-outline btn-sm" id="btn-test-ia">Tester</button>
-            </div>
+            <div class="input-with-btn"><input type="password" id="s-anthropic-key" placeholder="sk-ant-..."><button class="btn btn-outline btn-sm" id="btn-test-ia">Tester</button></div>
             <span id="test-ia-result" class="test-result"></span>
           </div>
           <div class="form-group">
             <label>Clé API Google Maps</label>
-            <div class="input-with-btn">
-              <input type="text" id="s-gmaps-key" placeholder="AIza...">
-              <button class="btn btn-outline btn-sm" id="btn-test-maps">Tester</button>
-            </div>
+            <div class="input-with-btn"><input type="text" id="s-gmaps-key" placeholder="AIza..."><button class="btn btn-outline btn-sm" id="btn-test-maps">Tester</button></div>
             <span id="test-maps-result" class="test-result"></span>
           </div>
         </div>
@@ -487,9 +352,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2 id="modal-title">Aperçu</h2>
-      <button class="btn-icon" id="modal-close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <button class="btn-icon" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div id="modal-body" class="modal-body"></div>
     <div id="modal-footer" class="modal-footer"></div>
@@ -504,6 +367,8 @@
 <script src="/js/devis.js"></script>
 <script src="/js/dashboard.js"></script>
 <script src="/js/history.js"></script>
+<script src="/js/kanban.js"></script>
+<script src="/js/reminders.js"></script>
 <script src="/js/settings.js"></script>
 <script src="/js/app.js"></script>
 </body>

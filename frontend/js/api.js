@@ -1,107 +1,65 @@
 /* =============================================
-   API — Utilitaires de communication backend
+   API — Client HTTP centralisé
    ============================================= */
 
 const API = {
-  BASE: '/api',
-
-  async get(path) {
-    const res = await fetch(`${this.BASE}${path}`);
-    if (!res.ok) {
-      const msg = await res.text().catch(() => 'Erreur inconnue');
-      throw new Error(msg);
-    }
-    return res.json();
-  },
-
-  async post(path, data) {
-    const res = await fetch(`${this.BASE}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  async _fetch(url, options = {}) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options
     });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => 'Erreur inconnue');
-      throw new Error(msg);
-    }
-    return res.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
   },
 
-  async patch(path, data) {
-    const res = await fetch(`${this.BASE}${path}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => 'Erreur inconnue');
-      throw new Error(msg);
-    }
-    return res.json();
-  },
-
-  async delete(path) {
-    const res = await fetch(`${this.BASE}${path}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => 'Erreur inconnue');
-      throw new Error(msg);
-    }
-    return res.json();
-  },
-
-  async upload(path, formData) {
-    const res = await fetch(`${this.BASE}${path}`, {
-      method: 'POST',
-      body: formData
-    });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => 'Erreur inconnue');
-      throw new Error(msg);
-    }
-    return res.json();
-  },
-
-  // ---- Endpoints spécifiques ----
-
-  // Chat
   chat: {
-    send: (data) => API.post('/chat', data),
-    clear: (sessionId) => API.delete(`/chat/${sessionId}`)
+    send: (body) => API._fetch('/api/chat', { method: 'POST', body: JSON.stringify(body) }),
+    deleteSession: (sid) => API._fetch(`/api/chat/${sid}`, { method: 'DELETE' })
   },
 
-  // Devis
   devis: {
-    generate: (data) => API.post('/devis/generate', data),
-    save: (data) => API.post('/devis', data),
-    list: (params = '') => API.get(`/devis${params}`),
-    get: (id) => API.get(`/devis/${id}`),
-    updateStatus: (id, status) => API.patch(`/devis/${id}/status`, { status }),
-    send: (id) => API.post(`/devis/${id}/send`, {}),
-    delete: (id) => API.delete(`/devis/${id}`),
+    generate: (body) => API._fetch('/api/devis/generate', { method: 'POST', body: JSON.stringify(body) }),
+    save: (body) => API._fetch('/api/devis', { method: 'POST', body: JSON.stringify(body) }),
+    list: (params = '') => API._fetch(`/api/devis${params}`),
+    get: (id) => API._fetch(`/api/devis/${id}`),
+    updateStatus: (id, status) => API._fetch(`/api/devis/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    send: (id) => API._fetch(`/api/devis/${id}/send`, { method: 'POST' }),
+    delete: (id) => API._fetch(`/api/devis/${id}`, { method: 'DELETE' }),
     pdfUrl: (id) => `/api/devis/${id}/pdf`,
     rentabiliteUrl: (id) => `/api/devis/${id}/rentabilite`
   },
 
-  // Upload
-  upload: {
-    file: (formData) => API.upload('/upload', formData)
+  signature: {
+    send: (id) => API._fetch(`/api/signature/${id}/send`, { method: 'POST' }),
+    sign: (token, body) => API._fetch(`/api/signature/sign/${token}`, { method: 'POST', body: JSON.stringify(body) })
   },
 
-  // History
+  reminders: {
+    getTemplates: () => API._fetch('/api/reminders/templates'),
+    updateTemplate: (id, body) => API._fetch(`/api/reminders/templates/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    send: (devisId, type) => API._fetch('/api/reminders/send', { method: 'POST', body: JSON.stringify({ devisId, type }) }),
+    getLog: (devisId) => API._fetch(`/api/reminders/log/${devisId}`)
+  },
+
+  kanban: {
+    get: () => API._fetch('/api/kanban'),
+    move: (id, stage) => API._fetch(`/api/kanban/${id}/move`, { method: 'PATCH', body: JSON.stringify({ stage }) }),
+    acompte: (id, amount) => API._fetch(`/api/kanban/${id}/acompte`, { method: 'POST', body: JSON.stringify({ amount }) })
+  },
+
   history: {
-    get: (params = '') => API.get(`/history${params}`)
+    get: (params = '') => API._fetch(`/api/history${params}`)
   },
 
-  // Dashboard
   dashboard: {
-    stats: () => API.get('/dashboard/stats')
+    stats: () => API._fetch('/api/dashboard/stats')
   },
 
-  // Settings
   settings: {
-    get: () => API.get('/settings'),
-    save: (data) => API.post('/settings', data),
-    testIA: () => API.post('/settings/test-ia', {}),
-    testMaps: (data) => API.post('/settings/test-distance', data)
+    get: () => API._fetch('/api/settings'),
+    save: (body) => API._fetch('/api/settings', { method: 'POST', body: JSON.stringify(body) }),
+    testIA: () => API._fetch('/api/settings/test-ia', { method: 'POST' }),
+    testMaps: (body) => API._fetch('/api/settings/test-distance', { method: 'POST', body: JSON.stringify(body) })
   }
 };

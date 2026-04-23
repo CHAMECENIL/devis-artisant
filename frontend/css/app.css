@@ -991,8 +991,6 @@ html, body {
 
 #section-history {
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .history-filters {
@@ -1350,3 +1348,84 @@ html, body {
   .nav-item { justify-content: center; padding: 12px; }
   .nav-item svg { opacity: 1; }
 }
+
+/* =============================================
+   KANBAN
+   ============================================= */
+.kanban-board { overflow-x: auto; padding-bottom: 20px; }
+.kanban-columns { display: flex; gap: 14px; min-width: max-content; }
+.kanban-col { background: #f8fafc; border-radius: 12px; width: 240px; min-width: 240px; padding: 0; border: 1px solid #e5e7eb; }
+.kanban-col-header { padding: 14px 14px 10px; background: white; border-radius: 12px 12px 0 0; border-bottom: 1px solid #f3f4f6; }
+.kanban-col-title { font-weight: 700; font-size: 13px; color: var(--text); }
+.kanban-badge-count { background: #e5e7eb; color: #6b7280; font-size: 11px; padding: 1px 7px; border-radius: 20px; margin-left: 6px; font-weight: 700; }
+.kanban-col-ca { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 4px; }
+.kanban-cards { padding: 10px; min-height: 120px; display: flex; flex-direction: column; gap: 8px; }
+.kanban-col.drag-over { background: #dbeafe; border-color: var(--primary); }
+.kanban-empty-col { text-align: center; padding: 20px 10px; color: #9ca3af; font-size: 12px; border: 2px dashed #e5e7eb; border-radius: 8px; }
+.kanban-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; cursor: grab; transition: box-shadow 0.15s, transform 0.15s; }
+.kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+.kanban-card.dragging { opacity: 0.5; transform: scale(0.97); cursor: grabbing; }
+.kanban-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.kanban-numero { font-family: monospace; font-size: 11px; color: var(--primary); font-weight: 700; }
+.kanban-reminder-badge { font-size: 10px; }
+.kanban-client { font-weight: 700; font-size: 13px; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kanban-chantier { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; line-height: 1.3; }
+.kanban-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f3f4f6; padding-top: 6px; }
+.kanban-montant { font-weight: 700; font-size: 13px; }
+.kanban-marge { font-size: 12px; font-weight: 700; }
+.kanban-aging { font-size: 10px; color: #f59e0b; margin-top: 4px; }
+.kanban-card-actions { display: flex; gap: 4px; margin-top: 8px; border-top: 1px solid #f3f4f6; padding-top: 6px; }
+.kanban-action-btn { background: none; border: 1px solid #e5e7eb; border-radius: 4px; padding: 3px 7px; font-size: 13px; cursor: pointer; transition: background 0.1s; }
+.kanban-action-btn:hover { background: #f3f4f6; }
+
+/* =============================================
+   HISTORIQUE — Boutons d'actions enrichis
+   ============================================= */
+.table-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 5px; background: white; color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.action-btn svg { width: 12px; height: 12px; }
+.action-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
+.action-btn-orange { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
+.action-btn-orange:hover { background: #fef3c7; }
+.action-btn-blue { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+.action-btn-blue:hover { background: #dbeafe; }
+.action-btn-purple { border-color: #8b5cf6; color: #6d28d9; background: #f5f3ff; }
+.action-btn-purple:hover { background: #ede9fe; }
+.action-btn-green { border-color: #22c55e; color: #15803d; background: #f0fdf4; }
+.action-btn-green:hover { background: #dcfce7; }
+.action-btn-red { border-color: #ef4444; color: #dc2626; background: #fef2f2; }
+.action-btn-red:hover { background: #fee2e2; }
+
+/* Dropdown relances */
+.dropdown-wrap { position: relative; display: inline-block; }
+.dropdown-menu { display: none; position: absolute; top: 100%; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 190px; z-index: 1000; padding: 6px 0; }
+.dropdown-menu.open { display: block; }
+.dropdown-item { display: block; width: 100%; padding: 8px 14px; font-size: 13px; text-align: left; background: none; border: none; cursor: pointer; color: var(--text); white-space: nowrap; transition: background 0.1s; }
+.dropdown-item:hover { background: #f3f4f6; }
+
+/* Badges supplémentaires */
+.badge-signed { background: #dbeafe; color: #1d4ed8; }
+.badge-acompte { background: #fef3c7; color: #92400e; }
+.badge-inprogress { background: #ede9fe; color: #6d28d9; }
+.badge-done { background: #dcfce7; color: #15803d; }
+
+/* =============================================
+   RELANCES / REMINDERS
+   ============================================= */
+.reminders-grid { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+.reminder-card { padding: 20px; }
+.reminder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.reminder-label { font-weight: 700; font-size: 15px; }
+.reminder-delay { font-size: 12px; color: var(--text-muted); margin-left: 10px; }
+.reminder-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; }
+.template-vars { font-size: 10px; color: var(--text-muted); margin-left: 8px; font-weight: normal; }
+.reminder-subject-input, .reminder-body-input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.reminder-body-input { resize: vertical; font-family: monospace; }
+
+/* Toggle switch */
+.toggle-switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #d1d5db; border-radius: 22px; transition: .3s; }
+.toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--primary); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
