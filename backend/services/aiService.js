@@ -146,6 +146,67 @@ Pour tester l'application, utilisez le bouton **"Nouveau Devis"** dans le menu d
 
 **Marge estimée : ~36%** ✅`,
 
+  plomberie: (msg) => `## ⚠️ POINTS D'ATTENTION CHANTIER
+
+- **Coupure d'eau** : Localiser vanne générale + prévoir coupure pendant l'intervention
+- **Compatibilité** : Vérifier pression réseau (1,5-3 bar requis pour la plupart des équipements)
+- **Accès** : Dégager la zone d'installation (compteur, cellier, local technique)
+- **Évacuation** : Prévoir raccordement sur siphon ou évacuation existante si nécessaire
+- **Garantie** : Installation conforme aux prescriptions fabricant (obligatoire pour SAV)
+- **DTU 60.1** : Respecter les normes d'installation plomberie en vigueur
+
+---
+
+## 📄 DEVIS CLIENT — Installation / Plomberie
+
+| Désignation | Qté | Unité | PU HT | Total HT |
+|---|---|---|---|---|
+| Fourniture équipement principal (selon devis fabricant) | 1 | u | 580,00 € | 580,00 € |
+| Fourniture robinetterie et vannes d'arrêt | 4 | u | 28,00 € | 112,00 € |
+| Fourniture raccords à sertir (lot) | 1 | Forfait | 65,00 € | 65,00 € |
+| Tuyaux multicouche Ø16 ou Ø20 | 3 | ml | 8,50 € | 25,50 € |
+| Coudes, tés, jonctions (lot) | 1 | Forfait | 45,00 € | 45,00 € |
+| Fourniture filtre anti-particules | 1 | u | 38,00 € | 38,00 € |
+| Pose et raccordement équipement | 1 | Forfait | 280,00 € | 280,00 € |
+| Test d'étanchéité + mise en service | 1 | Forfait | 80,00 € | 80,00 € |
+| Protection sol et évacuation déchets emballages | 1 | Forfait | 25,00 € | 25,00 € |
+
+**Durée estimée : 1j installation × 1,15 contingence = 1 journée**
+**Total HT : ~1 250,50 €**
+**TVA 10% : ~125,05 €**
+**Total TTC : ~1 375,55 €**
+
+---
+
+## 📊 FICHE DE RENTABILITÉ (INTERNE)
+
+| Poste | Coût réel | Facturé | Marge |
+|---|---|---|---|
+| Équipement + fournitures | 580,00 € | 930,50 € | 37% |
+| Main d'œuvre (6h × 15€) | 90,00 € | 360,00 € | 75% |
+
+**Taux de marge global estimé : ~38%** ✅
+
+---
+
+## 🛒 LISTE DE COURSES FOURNISSEURS
+
+| Fourniture | Qté | Prix marché | Fournisseur conseillé | Total |
+|---|---|---|---|---|
+| Équipement principal | 1 | Prix fabricant | Cedeo / Rexel / Pro | variable |
+| Vannes d'arrêt quart de tour | 4 | 12-18 € | Cedeo / Point P | 60,00 € |
+| Raccords à sertir Ø16 (lot 10) | 2 | 18-25 € | Cedeo / Rexel | 42,00 € |
+| Tuyaux multicouche Ø16 | 3 ml | 4-7 €/ml | Leroy Merlin / Cedeo | 16,00 € |
+| Filtre anti-particules | 1 | 20-35 € | Cedeo / Sanitaire Pro | 25,00 € |
+
+---
+
+## 📈 ANALYSE STRATÉGIQUE
+
+✅ **Chantier rapide et rentable** — 1 journée, marge ~38%
+⚡ **Optimisation** — Négocier équipement chez distributeur agréé (remise pro 10-15%)
+💡 **Upsell** — Proposer contrat maintenance annuelle (+120€/an récurrent)`,
+
   renovation: (surface) => `## ⚠️ POINTS D'ATTENTION CHANTIER
 
 - **Amiante/plomb** : Diagnostic obligatoire avant démolition (construction <1997)
@@ -224,18 +285,30 @@ function extractSurface(text) {
   return match ? parseInt(match[1]) : 12;
 }
 
+// Détecte le type de chantier depuis la description
+function detectProjectType(msg) {
+  const m = (msg || '').toLowerCase();
+  if (m.includes('salle de bain') || m.includes('sdb') || m.includes('salle d\'eau')) return 'sdb';
+  if (m.includes('carrelage') || m.includes('carrel') || m.includes('faïence') || m.includes('faiencage')) return 'carrelage';
+  if (m.includes('rénovation') || m.includes('renovation') || m.includes('appartement') || m.includes('maison')) return 'renovation';
+  if (m.includes('adoucisseur') || m.includes('chaudière') || m.includes('chauffe-eau') || m.includes('plomberie')
+    || m.includes('sanitaire') || m.includes('installation') || m.includes('tuyaux') || m.includes('vanne')
+    || m.includes('raccord') || m.includes('ballon') || m.includes('pompe') || m.includes('filtre')) return 'plomberie';
+  if (m.includes('peinture') || m.includes('enduit') || m.includes('ravalement')) return 'peinture';
+  if (m.includes('électricité') || m.includes('electricite') || m.includes('tableau') || m.includes('câblage')) return 'electricite';
+  if (m.includes('toiture') || m.includes('toit') || m.includes('tuile') || m.includes('ardoise') || m.includes('zinguerie')) return 'toiture';
+  return 'generique';
+}
+
 function generateDemoResponse(message) {
   const msg = (message || '').toLowerCase();
+  const type = detectProjectType(msg);
+  const surface = extractSurface(msg);
 
-  if (msg.includes('salle de bain') || msg.includes('sdb') || msg.includes('salle d\'eau')) {
-    return DEMO_RESPONSES.salleDeBain(extractSurface(msg));
-  }
-  if (msg.includes('carrelage') || msg.includes('carrel')) {
-    return DEMO_RESPONSES.carrelage(extractSurface(msg));
-  }
-  if (msg.includes('rénovation') || msg.includes('renovation') || msg.includes('appartement') || msg.includes('maison')) {
-    return DEMO_RESPONSES.renovation(extractSurface(msg));
-  }
+  if (type === 'sdb') return DEMO_RESPONSES.salleDeBain(surface);
+  if (type === 'carrelage') return DEMO_RESPONSES.carrelage(surface);
+  if (type === 'renovation') return DEMO_RESPONSES.renovation(surface);
+  if (type === 'plomberie') return DEMO_RESPONSES.plomberie(msg);
   return DEMO_RESPONSES.default(message);
 }
 
@@ -450,64 +523,148 @@ async function generateDevisFromDescription(description, settings) {
   if (isDemoMode()) {
     const msg = (description || '').toLowerCase();
     const surface = extractSurface(description);
+    const type = detectProjectType(msg);
+    const tva = settings?.tva_rate || 10;
 
     let response = '';
-    if (msg.includes('salle de bain') || msg.includes('sdb')) {
-      response = DEMO_RESPONSES.salleDeBain(surface);
-    } else if (msg.includes('carrelage')) {
-      response = DEMO_RESPONSES.carrelage(surface);
-    } else if (msg.includes('rénovation') || msg.includes('appartement')) {
-      response = DEMO_RESPONSES.renovation(surface);
-    } else {
-      response = DEMO_RESPONSES.renovation(surface || 30);
-    }
+    let jsonData = null;
 
-    const dureeBase = Math.ceil(surface / 8);
-    const dureeJours = Math.ceil(dureeBase * 1.15);
-    const totalHT = surface * 145;
-    const totalTVA = totalHT * (settings?.tva_rate || 10) / 100;
-    const jsonData = {
-      alertesChantier: [
-        'Vérifier présence amiante si construction avant 1997',
-        'Contrôler planéité du support (ragréage probable)',
-        'Repérer canalisations encastrées avant perçage',
-        'Prévoir évacuation gravats (benne)'
-      ],
-      lignes: [
-        { designation: 'Dépose revêtement existant', unite: 'm²', quantite: surface, prixUnitaireHT: 16, coutMateriau: 2, coutMainOeuvre: 14, heuresMO: 0.9, notes: '' },
-        { designation: 'Évacuation gravats', unite: 'forfait', quantite: 1, prixUnitaireHT: 180, coutMateriau: 180, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
-        { designation: 'Ragréage sol autonivelant', unite: 'm²', quantite: surface, prixUnitaireHT: 22, coutMateriau: 16, coutMainOeuvre: 6, heuresMO: 0.4, notes: 'Prévoir +5% sur surface' },
-        { designation: 'Primaire d\'accrochage', unite: 'm²', quantite: surface, prixUnitaireHT: 5, coutMateriau: 4, coutMainOeuvre: 1, heuresMO: 0.05, notes: '' },
-        { designation: `Fourniture carrelage 60×60 grès cérame (${Math.ceil(surface * 1.1)} m² +10% chute)`, unite: 'm²', quantite: Math.ceil(surface * 1.1), prixUnitaireHT: 30, coutMateriau: 22, coutMainOeuvre: 0, heuresMO: 0, notes: 'Prévoir 10% de chute' },
-        { designation: 'Pose carrelage (y.c. découpes)', unite: 'm²', quantite: surface, prixUnitaireHT: 42, coutMateriau: 0, coutMainOeuvre: 42, heuresMO: 2.8, notes: '' },
-        { designation: 'Colle carrelage C2 flexible (sac 25kg)', unite: 'sac', quantite: Math.ceil(surface / 4), prixUnitaireHT: 26, coutMateriau: 19, coutMainOeuvre: 0, heuresMO: 0, notes: '1 sac pour ~4 m²' },
-        { designation: 'Joint époxy (sac 5kg)', unite: 'sac', quantite: Math.ceil(surface / 12), prixUnitaireHT: 44, coutMateriau: 34, coutMainOeuvre: 0, heuresMO: 0, notes: '1 sac pour ~12 m²' },
-        { designation: 'Silicone sanitaire (cartouche)', unite: 'u', quantite: 2, prixUnitaireHT: 8, coutMateriau: 6, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
-        { designation: 'Profilés de finition inox', unite: 'ml', quantite: Math.ceil(surface * 0.6), prixUnitaireHT: 5, coutMateriau: 3.5, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
-        { designation: 'Visserie, chevilles, consommables', unite: 'forfait', quantite: 1, prixUnitaireHT: 40, coutMateriau: 40, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
-        { designation: 'Bâches protection chantier', unite: 'forfait', quantite: 1, prixUnitaireHT: 25, coutMateriau: 25, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
-        { designation: 'Nettoyage fin de chantier', unite: 'forfait', quantite: 1, prixUnitaireHT: 160, coutMateriau: 20, coutMainOeuvre: 140, heuresMO: 2, notes: '' }
-      ],
-      listeAchats: [
-        { designation: `Carrelage grès cérame 60×60`, quantite: Math.ceil(surface * 1.1), unite: 'm²', prixAchatEstime: 18, fournisseurConseille: 'Brico Dépôt / Leroy Merlin', total: Math.ceil(surface * 1.1) * 18, notes: '+10% chute incluse' },
-        { designation: 'Colle C2 flexible (25kg)', quantite: Math.ceil(surface / 4), unite: 'sac', prixAchatEstime: 19, fournisseurConseille: 'Point P / Bigmat', total: Math.ceil(surface / 4) * 19, notes: '1 sac = ~4m²' },
-        { designation: 'Joint époxy (5kg)', quantite: Math.ceil(surface / 12), unite: 'sac', prixAchatEstime: 34, fournisseurConseille: 'Leroy Merlin / Pro', total: Math.ceil(surface / 12) * 34, notes: '' },
-        { designation: 'Silicone sanitaire', quantite: 2, unite: 'cart.', prixAchatEstime: 6, fournisseurConseille: 'Tout fournisseur', total: 12, notes: '' },
-        { designation: 'Profilés inox de finition', quantite: Math.ceil(surface * 0.6), unite: 'ml', prixAchatEstime: 3.5, fournisseurConseille: 'Leroy Merlin', total: Math.ceil(surface * 0.6) * 3.5, notes: '' }
-      ],
-      dureeDetaillee: `${dureeBase - 1}j pose + 1j prépa = ${dureeBase}j × 1,15 contingence = ${dureeJours} jours`,
-      totalHT, totalTVA,
-      totalTTC: totalHT + totalTVA,
-      totalMaterials: surface * 85,
-      totalLabor: surface * 1.5 * 45,
-      totalTravel: 45,
-      margeBrute: totalHT * 0.34,
-      tauxMarge: 34,
-      coutReel: totalHT * 0.66,
-      rentabiliteHoraire: (totalHT * 0.34) / (dureeJours * 8),
-      dureeJours,
-      distanceKm: 25
-    };
+    if (type === 'sdb') {
+      response = DEMO_RESPONSES.salleDeBain(surface);
+      const dureeBase = 9; const dureeJours = 9;
+      const totalHT = surface * 180;
+      const totalTVA = totalHT * tva / 100;
+      jsonData = {
+        alertesChantier: ['Vérifier présence amiante (construction <1997)','Contrôler étanchéité murs (humidité)','Repérer canalisations avant perçage','Prévoir évacuation gravats'],
+        lignes: [
+          { designation: 'Dépose carrelage sol existant', unite: 'm²', quantite: surface, prixUnitaireHT: 18, coutMateriau: 2, coutMainOeuvre: 16, heuresMO: 1, notes: '' },
+          { designation: 'Dépose carrelage mural', unite: 'm²', quantite: surface * 2.5, prixUnitaireHT: 15, coutMateriau: 1, coutMainOeuvre: 14, heuresMO: 0.9, notes: '' },
+          { designation: 'Évacuation gravats', unite: 'forfait', quantite: 1, prixUnitaireHT: 220, coutMateriau: 220, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Ragréage sol autonivelant', unite: 'm²', quantite: surface, prixUnitaireHT: 22, coutMateriau: 16, coutMainOeuvre: 6, heuresMO: 0.4, notes: '' },
+          { designation: `Carrelage sol grès cérame 60×60 (+10%)`, unite: 'm²', quantite: Math.ceil(surface * 1.1), prixUnitaireHT: 32, coutMateriau: 22, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Pose carrelage sol', unite: 'm²', quantite: surface, prixUnitaireHT: 42, coutMateriau: 0, coutMainOeuvre: 42, heuresMO: 2.8, notes: '' },
+          { designation: 'Colle C2 flexible (sac 25kg)', unite: 'sac', quantite: Math.ceil(surface / 4), prixUnitaireHT: 26, coutMateriau: 19, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: `Faïence murale 30×60 (+10%)`, unite: 'm²', quantite: Math.ceil(surface * 2.5 * 1.1), prixUnitaireHT: 28, coutMateriau: 20, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Pose faïence murale', unite: 'm²', quantite: surface * 2.5, prixUnitaireHT: 48, coutMateriau: 0, coutMainOeuvre: 48, heuresMO: 3.2, notes: '' },
+          { designation: 'Joint époxy sol + mur', unite: 'sac', quantite: Math.ceil((surface + surface * 2.5) / 12), prixUnitaireHT: 44, coutMateriau: 34, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Silicone sanitaire (cartouche)', unite: 'u', quantite: 3, prixUnitaireHT: 8, coutMateriau: 6, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Receveur douche italienne 90×90', unite: 'u', quantite: 1, prixUnitaireHT: 420, coutMateriau: 320, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Paroi douche verre 8mm', unite: 'u', quantite: 1, prixUnitaireHT: 585, coutMateriau: 450, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Plomberie dépose + repose sanitaires', unite: 'forfait', quantite: 1, prixUnitaireHT: 680, coutMateriau: 120, coutMainOeuvre: 560, heuresMO: 8, notes: '' },
+          { designation: 'Visserie, chevilles, profilés, consommables', unite: 'forfait', quantite: 1, prixUnitaireHT: 55, coutMateriau: 55, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Nettoyage fin de chantier', unite: 'forfait', quantite: 1, prixUnitaireHT: 180, coutMateriau: 20, coutMainOeuvre: 160, heuresMO: 2, notes: '' }
+        ],
+        listeAchats: [
+          { designation: 'Carrelage grès cérame 60×60', quantite: Math.ceil(surface * 1.1), unite: 'm²', prixAchatEstime: 22, fournisseurConseille: 'Brico Dépôt / Leroy Merlin', total: Math.ceil(surface * 1.1) * 22, notes: '+10% chute' },
+          { designation: 'Faïence murale 30×60', quantite: Math.ceil(surface * 2.5 * 1.1), unite: 'm²', prixAchatEstime: 20, fournisseurConseille: 'Leroy Merlin / Point P', total: Math.ceil(surface * 2.5 * 1.1) * 20, notes: '' },
+          { designation: 'Receveur douche italienne', quantite: 1, unite: 'u', prixAchatEstime: 320, fournisseurConseille: 'Brico Dépôt / Cedeo', total: 320, notes: '' },
+          { designation: 'Paroi douche verre 8mm', quantite: 1, unite: 'u', prixAchatEstime: 450, fournisseurConseille: 'Leroy Merlin / GSB', total: 450, notes: '' }
+        ],
+        dureeDetaillee: `4j dépose+carrelage + 2j plomberie + 1j peinture + 2j finitions = 9j (contingence 15% incluse)`,
+        totalHT, totalTVA, totalTTC: totalHT + totalTVA,
+        totalMaterials: totalHT * 0.55, totalLabor: totalHT * 0.42, totalTravel: 45,
+        margeBrute: totalHT * 0.34, tauxMarge: 34, coutReel: totalHT * 0.66,
+        rentabiliteHoraire: (totalHT * 0.34) / (dureeJours * 8), dureeJours, distanceKm: 25
+      };
+
+    } else if (type === 'carrelage') {
+      response = DEMO_RESPONSES.carrelage(surface);
+      const dureeBase = Math.ceil(surface / 15) + 1; const dureeJours = Math.ceil(dureeBase * 1.15);
+      const totalHT = surface * 120;
+      const totalTVA = totalHT * tva / 100;
+      jsonData = {
+        alertesChantier: ['Vérifier planéité du support (ragréage probable si écart >3mm)','Identifier nature du sol sous-jacent (parquet, béton, chape)','Chauffage au sol : désactiver 48h avant, colle flexible C2S1 obligatoire'],
+        lignes: [
+          { designation: 'Dépose ancien revêtement', unite: 'm²', quantite: surface, prixUnitaireHT: 14, coutMateriau: 2, coutMainOeuvre: 12, heuresMO: 0.8, notes: '' },
+          { designation: 'Évacuation déchets', unite: 'forfait', quantite: 1, prixUnitaireHT: 150, coutMateriau: 150, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Ragréage autonivelant (sac 25kg)', unite: 'sac', quantite: Math.ceil(surface / 6), prixUnitaireHT: 28, coutMateriau: 20, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Primaire d\'accrochage', unite: 'm²', quantite: surface, prixUnitaireHT: 5, coutMateriau: 4, coutMainOeuvre: 1, heuresMO: 0.05, notes: '' },
+          { designation: `Carrelage 60×60 grès cérame (+10%)`, unite: 'm²', quantite: Math.ceil(surface * 1.1), prixUnitaireHT: 28, coutMateriau: 20, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Colle C2 flexible (sac 25kg)', unite: 'sac', quantite: Math.ceil(surface / 4), prixUnitaireHT: 26, coutMateriau: 19, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Pose carrelage (y.c. découpes)', unite: 'm²', quantite: surface, prixUnitaireHT: 38, coutMateriau: 0, coutMainOeuvre: 38, heuresMO: 2.5, notes: '' },
+          { designation: 'Joint époxy (sac 5kg)', unite: 'sac', quantite: Math.ceil(surface / 12), prixUnitaireHT: 44, coutMateriau: 34, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Plinthes assorties', unite: 'ml', quantite: Math.ceil(Math.sqrt(surface) * 4), prixUnitaireHT: 9.5, coutMateriau: 7, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Profilés de transition', unite: 'ml', quantite: 2, prixUnitaireHT: 12, coutMateriau: 9, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Bâches protection + consommables', unite: 'forfait', quantite: 1, prixUnitaireHT: 40, coutMateriau: 40, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Nettoyage fin de chantier', unite: 'forfait', quantite: 1, prixUnitaireHT: 120, coutMateriau: 15, coutMainOeuvre: 105, heuresMO: 1.5, notes: '' }
+        ],
+        listeAchats: [
+          { designation: 'Carrelage 60×60', quantite: Math.ceil(surface * 1.1), unite: 'm²', prixAchatEstime: 18, fournisseurConseille: 'Brico Dépôt / Point P', total: Math.ceil(surface * 1.1) * 18, notes: '+10% chute' },
+          { designation: 'Colle C2 flexible (25kg)', quantite: Math.ceil(surface / 4), unite: 'sac', prixAchatEstime: 19, fournisseurConseille: 'Point P / Bigmat', total: Math.ceil(surface / 4) * 19, notes: '' },
+          { designation: 'Joint époxy (5kg)', quantite: Math.ceil(surface / 12), unite: 'sac', prixAchatEstime: 34, fournisseurConseille: 'Leroy Merlin', total: Math.ceil(surface / 12) * 34, notes: '' }
+        ],
+        dureeDetaillee: `1j préparation + ${Math.ceil(surface / 15)}j pose = ${dureeBase}j × 1,15 = ${dureeJours} jours`,
+        totalHT, totalTVA, totalTTC: totalHT + totalTVA,
+        totalMaterials: totalHT * 0.55, totalLabor: totalHT * 0.42, totalTravel: 45,
+        margeBrute: totalHT * 0.36, tauxMarge: 36, coutReel: totalHT * 0.64,
+        rentabiliteHoraire: (totalHT * 0.36) / (dureeJours * 8), dureeJours, distanceKm: 25
+      };
+
+    } else if (type === 'plomberie') {
+      response = DEMO_RESPONSES.plomberie(msg);
+      const dureeJours = 1;
+      const totalHT = 1250;
+      const totalTVA = totalHT * tva / 100;
+      jsonData = {
+        alertesChantier: [
+          'Localiser et couper la vanne d\'arrêt générale avant intervention',
+          'Vérifier pression réseau compatible avec l\'équipement (1,5-3 bar)',
+          'S\'assurer que le local d\'installation est accessible et débarrassé',
+          'Vérifier compatibilité des raccords existants (diamètre, matière)',
+          'Prévoir évacuation si nécessaire (siphon ou vidange à proximité)'
+        ],
+        lignes: [
+          { designation: 'Fourniture équipement principal (réf. selon commande client)', unite: 'u', quantite: 1, prixUnitaireHT: 580, coutMateriau: 446, coutMainOeuvre: 0, heuresMO: 0, notes: 'Prix indicatif — ajuster selon devis fabricant' },
+          { designation: 'Fourniture vannes d\'arrêt quart de tour', unite: 'u', quantite: 4, prixUnitaireHT: 22, coutMateriau: 17, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Fourniture raccords à sertir (lot)', unite: 'forfait', quantite: 1, prixUnitaireHT: 65, coutMateriau: 50, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Tuyaux multicouche Ø16 ou Ø20', unite: 'ml', quantite: 3, prixUnitaireHT: 8.5, coutMateriau: 6.5, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Coudes, tés, jonctions (lot)', unite: 'forfait', quantite: 1, prixUnitaireHT: 58, coutMateriau: 45, coutMainOeuvre: 0, heuresMO: 0, notes: '' },
+          { designation: 'Fourniture filtre anti-particules', unite: 'u', quantite: 1, prixUnitaireHT: 49, coutMateriau: 38, coutMainOeuvre: 0, heuresMO: 0, notes: 'Recommandé en amont de l\'équipement' },
+          { designation: 'Pose et raccordement (installation complète)', unite: 'forfait', quantite: 1, prixUnitaireHT: 280, coutMateriau: 0, coutMainOeuvre: 280, heuresMO: 4, notes: '' },
+          { designation: 'Test d\'étanchéité + mise en service + formation', unite: 'forfait', quantite: 1, prixUnitaireHT: 80, coutMateriau: 0, coutMainOeuvre: 80, heuresMO: 1, notes: '' },
+          { designation: 'Protection sol + évacuation emballages', unite: 'forfait', quantite: 1, prixUnitaireHT: 30, coutMateriau: 30, coutMainOeuvre: 0, heuresMO: 0, notes: '' }
+        ],
+        listeAchats: [
+          { designation: 'Équipement principal (réf. fabricant)', quantite: 1, unite: 'u', prixAchatEstime: 446, fournisseurConseille: 'Cedeo / Rexel / distributeur agréé', total: 446, notes: 'Demander remise pro 10-15%' },
+          { designation: 'Vannes d\'arrêt quart de tour', quantite: 4, unite: 'u', prixAchatEstime: 14, fournisseurConseille: 'Cedeo / Point P', total: 56, notes: '' },
+          { designation: 'Raccords à sertir (lot)', quantite: 1, unite: 'forfait', prixAchatEstime: 45, fournisseurConseille: 'Cedeo / Rexel', total: 45, notes: '' },
+          { designation: 'Tuyaux multicouche Ø16', quantite: 3, unite: 'ml', prixAchatEstime: 5, fournisseurConseille: 'Leroy Merlin / Cedeo', total: 15, notes: '' },
+          { designation: 'Filtre anti-particules', quantite: 1, unite: 'u', prixAchatEstime: 28, fournisseurConseille: 'Cedeo / Sanitaire Pro', total: 28, notes: '' }
+        ],
+        dureeDetaillee: `Installation + tests = 5h × 1,15 contingence = 1 journée`,
+        totalHT, totalTVA, totalTTC: totalHT + totalTVA,
+        totalMaterials: 700, totalLabor: 480, totalTravel: 45,
+        margeBrute: totalHT * 0.38, tauxMarge: 38, coutReel: totalHT * 0.62,
+        rentabiliteHoraire: (totalHT * 0.38) / (dureeJours * 8), dureeJours, distanceKm: 25
+      };
+
+    } else {
+      // Fallback générique : renovation
+      response = DEMO_RESPONSES.renovation(surface || 30);
+      const s = surface || 30;
+      const dureeBase = Math.ceil(s / 10); const dureeJours = Math.ceil(dureeBase * 1.15);
+      const totalHT = s * 145;
+      const totalTVA = totalHT * tva / 100;
+      jsonData = {
+        alertesChantier: [
+          'Configurer une clé API Anthropic (Paramètres) pour un devis adapté à votre projet',
+          'Ce devis démo est générique — les lignes sont à ajuster selon votre chantier réel',
+          'Vérifier accessibilité du chantier et stationnement matériel',
+          'Identifier tous les intervenants nécessaires (électricien, plombier, maçon...)'
+        ],
+        lignes: [
+          { designation: '⚠️ DEMO — Ajustez les lignes selon votre projet réel', unite: 'forfait', quantite: 1, prixUnitaireHT: totalHT * 0.6, coutMateriau: totalHT * 0.4, coutMainOeuvre: totalHT * 0.2, heuresMO: dureeJours * 6, notes: 'Ligne générique à remplacer' },
+          { designation: 'Main d\'œuvre (estimation)', unite: 'h', quantite: dureeJours * 8, prixUnitaireHT: 45, coutMateriau: 0, coutMainOeuvre: 45, heuresMO: 1, notes: '' },
+          { designation: 'Déplacements (estimation)', unite: 'forfait', quantite: 1, prixUnitaireHT: 45, coutMateriau: 0, coutMainOeuvre: 45, heuresMO: 0, notes: '' }
+        ],
+        listeAchats: [],
+        dureeDetaillee: `Estimation générique ${dureeBase}j × 1,15 = ${dureeJours} jours (à affiner selon projet)`,
+        totalHT, totalTVA, totalTTC: totalHT + totalTVA,
+        totalMaterials: totalHT * 0.5, totalLabor: totalHT * 0.45, totalTravel: 45,
+        margeBrute: totalHT * 0.32, tauxMarge: 32, coutReel: totalHT * 0.68,
+        rentabiliteHoraire: (totalHT * 0.32) / (dureeJours * 8), dureeJours, distanceKm: 25
+      };
+    }
 
     return `\`\`\`json\n${JSON.stringify(jsonData, null, 2)}\n\`\`\`\n\n${response}`;
   }

@@ -76,13 +76,16 @@
   // STATUS SIDEBAR
   // =====================
   async function checkStatus() {
+    const statusEl = document.getElementById('sidebar-status');
+    const indicatorEl = document.querySelector('.status-indicator');
+    if (!statusEl && !indicatorEl) return; // éléments supprimés (nouveau layout)
     try {
       await fetch('/api/settings');
-      document.getElementById('sidebar-status').textContent = 'Prêt';
-      document.querySelector('.status-indicator').style.background = '#22c55e';
+      if (statusEl) statusEl.textContent = 'Prêt';
+      if (indicatorEl) indicatorEl.style.background = '#22c55e';
     } catch {
-      document.getElementById('sidebar-status').textContent = 'Hors ligne';
-      document.querySelector('.status-indicator').style.background = '#ef4444';
+      if (statusEl) statusEl.textContent = 'Hors ligne';
+      if (indicatorEl) indicatorEl.style.background = '#ef4444';
     }
   }
 

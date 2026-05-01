@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — Devis Artisant</title>
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --primary-light: #e8f0fe;
+      --danger: #e02424;
+      --danger-light: #fde8e8;
+      --warning: #c27803;
+      --warning-light: #fdf6b2;
+      --success: #057a55;
+      --success-light: #def7ec;
+      --info: #1c64f2;
+      --info-light: #e8f0fe;
+      --bg: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+      --radius: 8px;
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    /* ── LAYOUT ── */
+    .auth-layout { display: flex; min-height: 100vh; }
+
+    /* ── PANNEAU GAUCHE ── */
+    .auth-brand {
+      flex: 1;
+      background: linear-gradient(160deg, #1e3a5f 0%, #0f2441 60%, #0a1628 100%);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 60px 48px; position: relative; overflow: hidden;
+    }
+
+    .auth-brand::before {
+      content: ''; position: absolute; top: -120px; right: -120px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(26,86,219,0.25) 0%, transparent 70%);
+    }
+
+    .auth-brand::after {
+      content: ''; position: absolute; bottom: -80px; left: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(96,165,250,0.15) 0%, transparent 70%);
+    }
+
+    .brand-content { position: relative; z-index: 1; max-width: 400px; width: 100%; }
+
+    .brand-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
+
+    .brand-logo-icon {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.1); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .brand-logo-icon svg { color: #60a5fa; }
+
+    .brand-logo-text { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .brand-logo-text span {
+      display: block; font-size: 11px; font-weight: 400;
+      color: rgba(255,255,255,0.45); letter-spacing: 0.5px;
+      text-transform: uppercase; margin-top: 1px;
+    }
+
+    .brand-headline { font-size: 32px; font-weight: 700; color: #fff; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 16px; }
+    .brand-headline em { font-style: normal; color: #60a5fa; }
+    .brand-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.6; margin-bottom: 48px; }
+
+    .brand-features { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+
+    .brand-feature { display: flex; align-items: flex-start; gap: 12px; }
+
+    .brand-feature-icon {
+      width: 32px; height: 32px; min-width: 32px;
+      background: rgba(255,255,255,0.08); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .brand-feature-icon svg { color: #60a5fa; }
+    .brand-feature-text strong { display: block; color: #fff; font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .brand-feature-text p { color: rgba(255,255,255,0.45); font-size: 12px; line-height: 1.5; }
+
+    /* ── PANNEAU DROIT ── */
+    .auth-form-panel {
+      width: 480px; min-width: 480px; background: #fff;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center; padding: 48px;
+    }
+
+    .auth-form-wrapper { width: 100%; max-width: 360px; }
+
+    .auth-form-header { margin-bottom: 28px; }
+    .auth-form-title { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; margin-bottom: 6px; }
+    .auth-form-sub { font-size: 14px; color: var(--text-muted); }
+
+    /* ── ALERTES ── */
+    .alert {
+      display: none; padding: 12px 14px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; margin-bottom: 18px;
+      align-items: flex-start; gap: 10px;
+    }
+    .alert.visible { display: flex; }
+    .alert svg { flex-shrink: 0; margin-top: 1px; }
+    .alert-body { flex: 1; }
+    .alert-body p { margin: 0; line-height: 1.5; }
+    .alert-body .alert-action {
+      margin-top: 8px;
+      background: none; border: none; padding: 0; cursor: pointer;
+      font-size: 12px; font-weight: 600; text-decoration: underline;
+    }
+
+    .alert-error   { background: var(--danger-light);  color: #9b1c1c; border: 1px solid #fca5a5; }
+    .alert-warning { background: var(--warning-light); color: #7e4a00; border: 1px solid #f6c462; }
+    .alert-success { background: var(--success-light); color: #03543f; border: 1px solid #6ee7b7; }
+    .alert-info    { background: var(--info-light);    color: #1e3a8a; border: 1px solid #93c5fd; }
+
+    .alert-error   .alert-action { color: #9b1c1c; }
+    .alert-warning .alert-action { color: #7e4a00; }
+    .alert-info    .alert-action { color: #1e3a8a; }
+
+    /* ── FORMULAIRE ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    .input-wrapper { position: relative; }
+
+    .form-input {
+      width: 100%; height: 42px; padding: 0 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; color: var(--text); background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    }
+
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.12); }
+    .form-input.has-icon { padding-right: 42px; }
+    .form-input.input-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(224,36,36,0.10); }
+
+    .input-icon-btn {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text-light); cursor: pointer;
+      display: flex; align-items: center;
+      padding: 4px; border-radius: 4px; border: none; background: none;
+      transition: color 0.15s;
+    }
+    .input-icon-btn:hover { color: var(--text-muted); }
+
+    /* ── REMEMBER + FORGOT ── */
+    .form-row-split {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+
+    .checkbox-label {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      font-size: 13px; color: var(--text-muted); user-select: none;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 15px; height: 15px; accent-color: var(--primary); cursor: pointer;
+    }
+
+    .link-text { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 500; }
+    .link-text:hover { text-decoration: underline; }
+
+    /* ── BOUTON SUBMIT ── */
+    .btn-submit {
+      width: 100%; height: 44px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: -0.1px;
+    }
+    .btn-submit:hover { background: var(--primary-dark, #1e429f); }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RATE LIMIT TIMER ── */
+    .rate-limit-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fef3c7; color: #92400e;
+      border: 1px solid #fcd34d; border-radius: 6px;
+      padding: 2px 8px; font-size: 11px; font-weight: 600;
+      margin-left: 8px; font-variant-numeric: tabular-nums;
+    }
+
+    /* ── FOOTER ── */
+    .auth-footer { margin-top: 28px; text-align: center; font-size: 13px; color: var(--text-muted); }
+    .auth-footer a { color: var(--primary); font-weight: 600; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0; color: var(--text-light); font-size: 12px;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .auth-brand { display: none; }
+      .auth-form-panel { width: 100%; min-width: 0; padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-layout">
+
+  <!-- ══ PANNEAU GAUCHE ══ -->
+  <div class="auth-brand">
+    <div class="brand-content">
+      <div class="brand-logo">
+        <div class="brand-logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div class="brand-logo-text">Devis Artisant <span>Plateforme BTP intelligente</span></div>
+      </div>
+
+      <h1 class="brand-headline">Gérez vos devis BTP<br>avec l'<em>intelligence artificielle</em></h1>
+      <p class="brand-sub">Générez, envoyez et suivez vos devis en quelques minutes.<br>Optimisez vos marges et développez votre activité.</p>
+
+      <ul class="brand-features">
+        <li class="brand-feature">
+          <div class="brand-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div class="brand-feature-text">
+            <strong>Génération IA instantanée</strong>
+            <p>Décrivez vos travaux, l'IA crée votre devis complet en quelques secondes.</p>
+          </div>
+        </li>
+        <li class="brand-feature">
+          <div class="brand-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="12"/><rect x="17" y="3" width="5" height="7"/></svg>
+          </div>
+          <div class="brand-feature-text">
+            <strong>Suivi Kanban intégré</strong>
+            <p>Visualisez vos chantiers de la prospection à la facturation.</p>
+          </div>
+        </li>
+        <li class="brand-feature">
+          <div class="brand-feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="brand-feature-text">
+            <strong>Signature électronique</strong>
+            <p>Vos clients signent en ligne en un clic. Devis acceptés plus vite.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ PANNEAU DROIT ══ -->
+  <div class="auth-form-panel">
+    <div class="auth-form-wrapper">
+
+      <div class="auth-form-header">
+        <h2 class="auth-form-title">Bienvenue 👋</h2>
+        <p class="auth-form-sub">Connectez-vous à votre espace artisan</p>
+      </div>
+
+      <!-- ── Alerte contextuelle ── -->
+      <div id="alert" class="alert" role="alert" aria-live="polite">
+        <svg id="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+        <div class="alert-body">
+          <p id="alert-text"></p>
+          <button id="alert-action" class="alert-action" style="display:none"></button>
+        </div>
+      </div>
+
+      <form id="login-form" novalidate>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="email">Adresse email</label>
+          <div class="input-wrapper">
+            <input id="email" class="form-input" type="email"
+              placeholder="vous@exemple.fr" autocomplete="email" required />
+          </div>
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="form-group">
+          <label class="form-label" for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <input id="password" class="form-input has-icon" type="password"
+              placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="input-icon-btn" id="toggle-pass" aria-label="Afficher le mot de passe">
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Se souvenir + mot de passe oublié -->
+        <div class="form-row-split">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember-me"> Se souvenir de moi
+          </label>
+          <a href="forgot-password.html" class="link-text">Mot de passe oublié ?</a>
+        </div>
+
+        <!-- Bouton -->
+        <button type="submit" class="btn-submit" id="submit-btn">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-text">Se connecter</span>
+          <span id="rate-timer" class="rate-limit-badge" style="display:none"></span>
+        </button>
+
+      </form>
+
+      <div class="divider">ou</div>
+
+      <div class="auth-footer">
+        Pas encore de compte ? <a href="register.html">Créer un compte →</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="/js/auth.js"></script>
+<script>
+  // ── Vérification token existant ──────────────────────────────
+  // Déjà authentifié → redirection directe
+  (function checkExistingSession() {
+    const token = Auth.getAccessToken();
+    if (!token) return;
+
+    const ttl = Auth.tokenTTL(token);
+
+    if (ttl > 0) {
+      // Token valide → redirection immédiate
+      window.location.replace('index.html');
+      return;
+    }
+
+    // Token expiré mais refresh disponible → tenter refresh silencieux
+    if (Auth.getRefreshToken()) {
+      Auth.refreshTokens()
+        .then(() => window.location.replace('index.html'))
+        .catch(() => { /* refresh échoué, rester sur login */ });
+    }
+  })();
+
+  // ── Lire message depuis URL params (ex: redirection depuis page protégée) ──
+  (function readUrlMessage() {
+    const params  = new URLSearchParams(window.location.search);
+    const infoMsg = params.get('info');
+    const okMsg   = params.get('success');
+
+    if (infoMsg) showAlert(decodeURIComponent(infoMsg), 'info');
+    if (okMsg)   showAlert(decodeURIComponent(okMsg),   'success');
+  })();
+
+  // ── Éléments DOM ────────────────────────────────────────────
+  const form         = document.getElementById('login-form');
+  const emailInput   = document.getElementById('email');
+  const passInput    = document.getElementById('password');
+  const rememberMe   = document.getElementById('remember-me');
+  const submitBtn    = document.getElementById('submit-btn');
+  const spinner      = document.getElementById('spinner');
+  const btnText      = document.getElementById('btn-text');
+  const rateTimer    = document.getElementById('rate-timer');
+  const alertEl      = document.getElementById('alert');
+  const alertText    = document.getElementById('alert-text');
+  const alertIcon    = document.getElementById('alert-icon');
+  const alertAction  = document.getElementById('alert-action');
+  const togglePass   = document.getElementById('toggle-pass');
+  const eyeIcon      = document.getElementById('eye-icon');
+
+  // ── Restore email mémorisé ───────────────────────────────────
+  const savedEmail = localStorage.getItem('rememberedEmail');
+  if (savedEmail) { emailInput.value = savedEmail; rememberMe.checked = true; }
+
+  // ── Email actuel pour la bannière "renvoyer" ─────────────────
+  let _lastEmail = savedEmail || '';
+  emailInput.addEventListener('input', () => { _lastEmail = emailInput.value.trim(); });
+
+  // ── Toggle affichage mot de passe ───────────────────────────
+  togglePass.addEventListener('click', () => {
+    const hidden = passInput.type === 'password';
+    passInput.type = hidden ? 'text' : 'password';
+    eyeIcon.innerHTML = hidden
+      ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  });
+
+  // ── Gestion de l'alerte ──────────────────────────────────────
+  const ICONS = {
+    error:   `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`,
+    warning: `<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
+    success: `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`,
+    info:    `<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>`,
+  };
+
+  function showAlert(message, type = 'error', actionLabel = null, actionFn = null) {
+    alertEl.className = `alert alert-${type} visible`;
+    alertIcon.innerHTML = ICONS[type] || ICONS.error;
+    alertText.textContent = message;
+
+    if (actionLabel && actionFn) {
+      alertAction.textContent = actionLabel;
+      alertAction.style.display = 'inline-block';
+      alertAction.onclick = actionFn;
+    } else {
+      alertAction.style.display = 'none';
+      alertAction.onclick = null;
+    }
+  }
+
+  function hideAlert() { alertEl.classList.remove('visible'); }
+
+  // ── État de chargement ──────────────────────────────────────
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    spinner.style.display = loading ? 'block' : 'none';
+    btnText.textContent = loading ? 'Connexion en cours…' : 'Se connecter';
+  }
+
+  // ── Countdown rate-limit ────────────────────────────────────
+  let _rateLimitTimer = null;
+
+  function startRateLimitCountdown(seconds) {
+    submitBtn.disabled = true;
+    rateTimer.style.display = 'inline-flex';
+
+    const tick = () => {
+      if (seconds <= 0) {
+        rateTimer.style.display = 'none';
+        submitBtn.disabled = false;
+        clearInterval(_rateLimitTimer);
+        return;
+      }
+      rateTimer.textContent = `${seconds}s`;
+      seconds--;
+    };
+
+    tick();
+    _rateLimitTimer = setInterval(tick, 1000);
+  }
+
+  // ── Mapping erreurs backend → messages FR ───────────────────
+  function mapError(err) {
+    const status  = err.status || 0;
+    const message = (err.message || '').toLowerCase();
+
+    // Rate limiting (429 Too Many Requests)
+    if (status === 429) {
+      const retryAfter = err.data?.retryAfter || 60;
+      startRateLimitCountdown(retryAfter);
+      return {
+        msg: `Trop de tentatives. Veuillez patienter avant de réessayer.`,
+        type: 'warning',
+      };
+    }
+
+    // Email non vérifié
+    if (message.includes('email') && message.includes('vérifié') ||
+        message.includes('verify') || message.includes('verified')) {
+      return {
+        msg: 'Votre email n\'est pas encore vérifié. Vérifiez votre boîte mail ou renvoyez l\'email.',
+        type: 'warning',
+        action: 'Renvoyer l\'email de vérification',
+        actionFn: handleResendVerification,
+      };
+    }
+
+    // Compte suspendu / tenant inactif
+    if (message.includes('suspendu') || message.includes('inactif') ||
+        message.includes('suspended') || message.includes('inactive')) {
+      return {
+        msg: 'Votre compte est suspendu. Contactez le support.',
+        type: 'error',
+      };
+    }
+
+    // Période d'essai expirée
+    if (message.includes('essai') || message.includes('trial') || message.includes('abonnement')) {
+      return {
+        msg: 'Votre période d\'essai est expirée. Activez un abonnement pour continuer.',
+        type: 'warning',
+        action: 'Voir les offres',
+        actionFn: () => window.location.href = 'register.html#plans',
+      };
+    }
+
+    // Mauvais identifiants (401)
+    if (status === 401 || message.includes('incorrect') ||
+        message.includes('invalid') || message.includes('wrong') ||
+        message.includes('invalide')) {
+      passInput.classList.add('input-error');
+      return { msg: 'Email ou mot de passe incorrect.', type: 'error' };
+    }
+
+    // Utilisateur introuvable
+    if (message.includes('not found') || message.includes('introuvable') || status === 404) {
+      emailInput.classList.add('input-error');
+      return { msg: 'Aucun compte trouvé avec cet email.', type: 'error' };
+    }
+
+    // Erreur serveur
+    if (status >= 500) {
+      return { msg: 'Erreur serveur. Réessayez dans quelques instants.', type: 'error' };
+    }
+
+    return { msg: err.message || 'Une erreur est survenue. Réessayez.', type: 'error' };
+  }
+
+  // ── Renvoyer email de vérification ─────────────────────────
+  async function handleResendVerification() {
+    const email = _lastEmail || emailInput.value.trim();
+    if (!email) {
+      showAlert('Saisissez votre email pour recevoir un nouveau lien.', 'info');
+      emailInput.focus();
+      return;
+    }
+
+    alertAction.disabled = true;
+    alertAction.textContent = 'Envoi en cours…';
+
+    try {
+      await Auth.resendVerification(email);
+      showAlert('Email de vérification renvoyé ! Vérifiez votre boîte mail.', 'success');
+    } catch (err) {
+      // Même en cas d'erreur, le backend renvoie un message générique (anti-énumération)
+      showAlert('Si cet email est enregistré, un nouveau lien a été envoyé.', 'success');
+    }
+  }
+
+  // ── Réinitialiser les erreurs champs ─────────────────────────
+  [emailInput, passInput].forEach(el => {
+    el.addEventListener('input', () => {
+      el.classList.remove('input-error');
+      hideAlert();
+    });
+  });
+
+  // ── Soumission du formulaire ─────────────────────────────────
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert();
+
+    const email    = emailInput.value.trim();
+    const password = passInput.value;
+
+    // Validation locale
+    if (!email) {
+      showAlert('Veuillez saisir votre adresse email.', 'error');
+      emailInput.focus();
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showAlert('L\'adresse email n\'est pas valide.', 'error');
+      emailInput.classList.add('input-error');
+      emailInput.focus();
+      return;
+    }
+
+    if (!password) {
+      showAlert('Veuillez saisir votre mot de passe.', 'error');
+      passInput.focus();
+      return;
+    }
+
+    setLoading(true);
+    _lastEmail = email;
+
+    try {
+      // ── Appel Auth.login() → stocke automatiquement accessToken,
+      //    refreshToken, user, tenant dans localStorage ──
+      const data = await Auth.login(email, password);
+
+      // Mémoriser l'email si demandé
+      if (rememberMe.checked) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
+      // Succès → feedback visuel puis redirection
+      showAlert(`Bienvenue ${data.user?.firstName || ''} ! Connexion réussie…`, 'success');
+      setTimeout(() => window.location.replace('index.html'), 700);
+
+    } catch (err) {
+      const { msg, type, action, actionFn } = mapError(err);
+      showAlert(msg, type, action, actionFn);
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>

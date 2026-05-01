@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Devis Artisant — IA BTP</title>
   <link rel="stylesheet" href="/css/app.css">
+  <!--
+    AUTH GUARD — Première vérification avant toute ressource.
+    Utilise document.write(meta refresh) = redirect natif navigateur,
+    non interceptable par les outils de test ou CSP.
+  -->
+  <script>
+    (function() {
+      var token = localStorage.getItem('accessToken');
+      if (!token) {
+        // Aucun token → redirect immédiat via meta-refresh (niveau navigateur)
+        document.write('<meta http-equiv="refresh" content="0;url=/login.html">');
+        return;
+      }
+      // Décoder l'expiration sans librairie
+      try {
+        var parts = token.split('.');
+        var payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+        if (payload.exp && payload.exp < Math.floor(Date.now()/1000)) {
+          // Token expiré : vérifier si refresh dispo
+          if (!localStorage.getItem('refreshToken')) {
+            document.write('<meta http-equiv="refresh" content="0;url=/login.html">');
+          }
+          // Si refresh dispo, auth.js s'en occupera après le chargement
+        }
+      } catch(e) {
+        // Token corrompu
+        document.write('<meta http-equiv="refresh" content="0;url=/login.html">');
+      }
+    })();
+  </script>
+  <!-- CDN et auth.js chargés uniquement si le guard est passé -->
+  <script src="/js/auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 </head>
@@ -49,9 +81,28 @@
       </a>
     </nav>
 
-    <div class="sidebar-footer">
-      <span class="status-indicator"></span>
-      <span id="sidebar-status">Prêt</span>
+    <!-- Lien Administration (affiché si rôle owner) -->
+    <a class="nav-item nav-item-admin" href="/admin-login.html" id="link-admin" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Administration
+    </a>
+
+    <!-- Bloc utilisateur connecté -->
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="user-avatar">--</div>
+      <div class="sidebar-user-info">
+        <span class="sidebar-user-name" id="user-name">…</span>
+        <span class="sidebar-user-company" id="user-company">…</span>
+      </div>
+      <button class="sidebar-user-logout" id="btn-logout" title="Se déconnecter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
     </div>
   </aside>
 
@@ -363,6 +414,32 @@
 <div id="toast-container"></div>
 
 <script src="/js/api.js"></script>
+<script>
+  // ── Afficher les infos utilisateur dans la sidebar ──
+  (function renderUserWidget() {
+    var user   = Auth.getCurrentUser();
+    var tenant = Auth.getCurrentTenant();
+
+    var name    = user ? ((user.firstName || '') + ' ' + (user.lastName || '')).trim() : '—';
+    var company = tenant ? (tenant.companyName || tenant.name || '—') : '—';
+    var initials = name.split(' ').filter(Boolean).map(function(w){ return w[0]; }).slice(0,2).join('').toUpperCase() || '?';
+
+    document.getElementById('user-avatar').textContent  = initials;
+    document.getElementById('user-name').textContent    = name;
+    document.getElementById('user-company').textContent = company;
+
+    document.getElementById('btn-logout').addEventListener('click', function() {
+      Auth.logout();
+    });
+
+    // Afficher le lien Admin si l'utilisateur est owner (rôle admin plateforme)
+    var role = user ? (user.role || '') : '';
+    if (role === 'owner' || role === 'admin') {
+      var adminLink = document.getElementById('link-admin');
+      if (adminLink) adminLink.style.display = 'flex';
+    }
+  })();
+</script>
 <script src="/js/chat.js"></script>
 <script src="/js/devis.js"></script>
 <script src="/js/dashboard.js"></script>

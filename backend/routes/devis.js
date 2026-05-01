@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       clientName, clientEmail, clientAddress,
       chantierAddress, description,
       lignes = [], distanceKm = 0, dureeJours = 1,
-      notes
+      notes, listeAchats
     } = req.body;
 
     const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
@@ -78,6 +78,7 @@ router.post('/', async (req, res) => {
     }
 
     // Sauvegarder le devis
+    const listeAchatsJson = listeAchats ? JSON.stringify(listeAchats) : null;
     const result = db.prepare(`
       INSERT INTO devis (
         numero, client_id, client_name, client_email, client_address,
@@ -85,15 +86,15 @@ router.post('/', async (req, res) => {
         total_ht, total_tva, total_ttc,
         total_materials, total_labor, total_travel,
         marge_brute, taux_marge, cout_reel, rentabilite_horaire,
-        duree_jours, distance_km, html_content, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duree_jours, distance_km, html_content, notes, liste_achats
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       numero, clientId, clientName || '', clientEmail || '', clientAddress || '',
       chantierAddress || '', description || '', 'draft',
       totals.totalHT, totals.totalTVA, totals.totalTTC,
       totals.totalMaterials, totals.totalLabor, totals.totalTravel,
       totals.margeBrute, totals.tauxMarge, totals.coutReel, totals.rentabiliteHoraire,
-      dureeJours, distanceKm, htmlContent, notes || ''
+      dureeJours, distanceKm, htmlContent, notes || '', listeAchatsJson
     );
 
     const devisId = Number(result.lastInsertRowid);
@@ -193,6 +194,31 @@ router.get('/:id/pdf', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// GET /api/devis/:id/liste-achats - Télécharger liste de courses CSV
+router.get('/:id/liste-achats', (req, res) => {
+  const devis = db.prepare('SELECT numero, client_name, liste_achats FROM devis WHERE id = ?').get(req.params.id);
+  if (!devis) return res.status(404).json({ error: 'Devis non trouvé' });
+  if (!devis.liste_achats) return res.status(404).json({ error: 'Aucune liste de courses pour ce devis' });
+
+  let items = [];
+  try { items = JSON.parse(devis.liste_achats); } catch (e) { return res.status(500).json({ error: 'Données corrompues' }); }
+
+  const header = 'Fourniture;Quantité;Unité;Prix achat estimé (€);Fournisseur conseillé;Total achat (€);Notes';
+  const rows = items.map(a => [
+    a.designation, a.quantite, a.unite,
+    (a.prixAchatEstime || 0).toString().replace('.', ','),
+    a.fournisseurConseille,
+    (a.total || 0).toString().replace('.', ','),
+    a.notes
+  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(';'));
+
+  const csv = '\ufeff' + [header, ...rows].join('\r\n');
+  const filename = `liste-courses-${devis.numero}.csv`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
 });
 
 // GET /api/devis/:id/rentabilite - Fiche rentabilité

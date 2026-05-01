@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un compte — Devis Artisant</title>
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --primary-light: #e8f0fe;
+      --danger: #e02424;
+      --danger-light: #fde8e8;
+      --success: #057a55;
+      --success-light: #def7ec;
+      --bg: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --text-light: #9ca3af;
+      --sidebar-bg: #1e3a5f;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+
+    .auth-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── PANNEAU GAUCHE ── */
+    .auth-brand {
+      flex: 1;
+      background: linear-gradient(160deg, #1e3a5f 0%, #0f2441 60%, #0a1628 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-brand::before {
+      content: '';
+      position: absolute;
+      top: -120px; right: -120px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(26,86,219,0.25) 0%, transparent 70%);
+    }
+
+    .brand-content { position: relative; z-index: 1; max-width: 400px; width: 100%; }
+
+    .brand-logo {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 40px;
+    }
+
+    .brand-logo-icon {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .brand-logo-icon svg { color: #60a5fa; }
+
+    .brand-logo-text { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .brand-logo-text span {
+      display: block; font-size: 11px; font-weight: 400;
+      color: rgba(255,255,255,0.45); letter-spacing: 0.5px;
+      text-transform: uppercase; margin-top: 1px;
+    }
+
+    .brand-headline { font-size: 30px; font-weight: 700; color: #fff; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 14px; }
+    .brand-headline em { font-style: normal; color: #60a5fa; }
+    .brand-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.6; margin-bottom: 40px; }
+
+    .plan-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .plan-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #60a5fa;
+      margin-bottom: 6px;
+    }
+
+    .plan-name { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+
+    .plan-price {
+      font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 16px;
+      display: flex; align-items: flex-end; gap: 4px;
+    }
+
+    .plan-price span { font-size: 16px; font-weight: 400; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .plan-feature {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: rgba(255,255,255,0.75);
+    }
+
+    .plan-feature svg { color: #34d399; flex-shrink: 0; }
+
+    /* ── PANNEAU DROIT ── */
+    .auth-form-panel {
+      width: 520px; min-width: 520px;
+      background: #fff;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 48px;
+      overflow-y: auto;
+    }
+
+    .auth-form-wrapper { width: 100%; max-width: 400px; }
+
+    .auth-form-header { margin-bottom: 28px; }
+    .auth-form-title { font-size: 24px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; margin-bottom: 6px; }
+    .auth-form-sub { font-size: 14px; color: var(--text-muted); }
+    .auth-form-sub a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .auth-form-sub a:hover { text-decoration: underline; }
+
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    .input-wrapper { position: relative; }
+
+    .form-input {
+      width: 100%; height: 42px; padding: 0 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; color: var(--text); background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+    }
+
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.12); }
+    .form-input.has-icon-right { padding-right: 42px; }
+    .form-input.error { border-color: var(--danger); }
+
+    .input-icon-right {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text-light); cursor: pointer;
+      display: flex; align-items: center;
+      padding: 4px; border-radius: 4px; border: none; background: none;
+      transition: color 0.15s;
+    }
+
+    .input-icon-right:hover { color: var(--text-muted); }
+
+    .field-hint { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+    .field-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: none; }
+    .field-error.visible { display: block; }
+
+    .password-strength {
+      margin-top: 6px;
+      display: flex; gap: 4px; align-items: center;
+    }
+
+    .strength-bar {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--border); transition: background 0.3s;
+    }
+
+    .strength-label { font-size: 11px; color: var(--text-light); margin-left: 4px; white-space: nowrap; }
+
+    .cgv-group {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 20px; margin-top: 4px;
+    }
+
+    .cgv-group input[type="checkbox"] {
+      width: 15px; height: 15px; margin-top: 1px;
+      accent-color: var(--primary); cursor: pointer; flex-shrink: 0;
+    }
+
+    .cgv-group label { font-size: 12px; color: var(--text-muted); line-height: 1.5; cursor: pointer; }
+    .cgv-group label a { color: var(--primary); text-decoration: none; }
+    .cgv-group label a:hover { text-decoration: underline; }
+
+    .btn-submit {
+      width: 100%; height: 44px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .btn-submit:hover { background: var(--primary-dark); }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert {
+      display: none; padding: 12px 14px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; margin-bottom: 20px;
+      align-items: flex-start; gap: 10px;
+    }
+
+    .alert.visible { display: flex; }
+    .alert-error { background: var(--danger-light); color: #9b1c1c; border: 1px solid #fca5a5; }
+    .alert-success { background: var(--success-light); color: #03543f; border: 1px solid #6ee7b7; }
+    .alert svg { flex-shrink: 0; margin-top: 1px; }
+
+    .auth-footer { margin-top: 24px; text-align: center; font-size: 13px; color: var(--text-muted); }
+    .auth-footer a { color: var(--primary); font-weight: 600; text-decoration: none; }
+    .auth-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .auth-brand { display: none; }
+      .auth-form-panel { width: 100%; min-width: 0; padding: 40px 24px; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-layout">
+
+  <!-- ══ PANNEAU GAUCHE ══ -->
+  <div class="auth-brand">
+    <div class="brand-content">
+
+      <div class="brand-logo">
+        <div class="brand-logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div class="brand-logo-text">
+          Devis Artisant
+          <span>Plateforme BTP intelligente</span>
+        </div>
+      </div>
+
+      <h1 class="brand-headline">
+        Commencez <em>gratuitement</em><br>pendant 14 jours
+      </h1>
+
+      <p class="brand-sub">
+        Aucune carte bancaire requise. Accès complet à toutes les fonctionnalités dès votre inscription.
+      </p>
+
+      <div class="plan-card">
+        <div class="plan-label">Essai gratuit inclus</div>
+        <div class="plan-name">Plan Pro</div>
+        <div class="plan-price">29€ <span>/ mois après l'essai</span></div>
+        <ul class="plan-features">
+          <li class="plan-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Devis illimités avec génération IA
+          </li>
+          <li class="plan-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Signature électronique intégrée
+          </li>
+          <li class="plan-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Dashboard & analyses de rentabilité
+          </li>
+          <li class="plan-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Relances automatiques par email
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ PANNEAU DROIT ══ -->
+  <div class="auth-form-panel">
+    <div class="auth-form-wrapper">
+
+      <div class="auth-form-header">
+        <h2 class="auth-form-title">Créer votre compte</h2>
+        <p class="auth-form-sub">Déjà inscrit ? <a href="login.html">Se connecter</a></p>
+      </div>
+
+      <div id="alert" class="alert alert-error" role="alert">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="alert-text"></span>
+      </div>
+
+      <form id="register-form" novalidate>
+
+        <!-- Nom + Prénom -->
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="firstName">Prénom</label>
+            <input id="firstName" class="form-input" type="text" placeholder="Jean" autocomplete="given-name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lastName">Nom</label>
+            <input id="lastName" class="form-input" type="text" placeholder="Martin" autocomplete="family-name" required />
+          </div>
+        </div>
+
+        <!-- Entreprise -->
+        <div class="form-group">
+          <label class="form-label" for="companyName">Nom de votre entreprise</label>
+          <input id="companyName" class="form-input" type="text" placeholder="Martin Bâtiment SARL" required />
+          <div class="field-hint">Apparaîtra sur vos devis et factures</div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="email">Adresse email professionnelle</label>
+          <input id="email" class="form-input" type="email" placeholder="jean@martin-batiment.fr" autocomplete="email" required />
+        </div>
+
+        <!-- Téléphone -->
+        <div class="form-group">
+          <label class="form-label" for="phone">Téléphone <span style="font-weight:400;color:var(--text-light)">(optionnel)</span></label>
+          <input id="phone" class="form-input" type="tel" placeholder="+33 6 12 34 56 78" autocomplete="tel" />
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="form-group">
+          <label class="form-label" for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <input
+              id="password"
+              class="form-input has-icon-right"
+              type="password"
+              placeholder="Minimum 8 caractères"
+              autocomplete="new-password"
+              required
+            />
+            <button type="button" class="input-icon-right" id="toggle-password" aria-label="Afficher le mot de passe">
+              <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <!-- Barre de force du mot de passe -->
+          <div class="password-strength" id="strength-bars">
+            <div class="strength-bar" id="bar1"></div>
+            <div class="strength-bar" id="bar2"></div>
+            <div class="strength-bar" id="bar3"></div>
+            <div class="strength-bar" id="bar4"></div>
+            <span class="strength-label" id="strength-label"></span>
+          </div>
+        </div>
+
+        <!-- CGV -->
+        <div class="cgv-group">
+          <input type="checkbox" id="accept-cgv" required />
+          <label for="accept-cgv">
+            J'accepte les <a href="#">Conditions Générales d'Utilisation</a> et la <a href="#">Politique de Confidentialité</a> de Devis Artisant.
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submit-btn">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-text">Créer mon compte</span>
+        </button>
+
+      </form>
+
+      <div class="auth-footer">
+        Déjà un compte ? <a href="login.html">Se connecter</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = 'http://localhost:3001/api/v1';
+
+  if (localStorage.getItem('accessToken')) {
+    window.location.replace('index.html');
+  }
+
+  const form        = document.getElementById('register-form');
+  const submitBtn   = document.getElementById('submit-btn');
+  const spinner     = document.getElementById('spinner');
+  const btnText     = document.getElementById('btn-text');
+  const alertEl     = document.getElementById('alert');
+  const alertText   = document.getElementById('alert-text');
+  const passInput   = document.getElementById('password');
+  const togglePass  = document.getElementById('toggle-password');
+  const eyeIcon     = document.getElementById('eye-icon');
+
+  // ── Toggle password ──
+  togglePass.addEventListener('click', () => {
+    const isHidden = passInput.type === 'password';
+    passInput.type = isHidden ? 'text' : 'password';
+    eyeIcon.innerHTML = isHidden
+      ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+  });
+
+  // ── Barre de force du mot de passe ──
+  const bars = [
+    document.getElementById('bar1'),
+    document.getElementById('bar2'),
+    document.getElementById('bar3'),
+    document.getElementById('bar4'),
+  ];
+  const strengthLabel = document.getElementById('strength-label');
+  const COLORS = ['#e02424', '#f59e0b', '#3b82f6', '#057a55'];
+  const LABELS = ['Très faible', 'Faible', 'Moyen', 'Fort'];
+
+  function calcStrength(pwd) {
+    let score = 0;
+    if (pwd.length >= 8)  score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd)) score++;
+    return Math.max(0, Math.min(3, score - (pwd.length < 6 ? 1 : 0)));
+  }
+
+  passInput.addEventListener('input', () => {
+    const pwd = passInput.value;
+    if (!pwd) {
+      bars.forEach(b => b.style.background = '');
+      strengthLabel.textContent = '';
+      return;
+    }
+    const s = calcStrength(pwd);
+    bars.forEach((b, i) => {
+      b.style.background = i <= s ? COLORS[s] : '';
+    });
+    strengthLabel.textContent = LABELS[s];
+    strengthLabel.style.color = COLORS[s];
+  });
+
+  // ── Alertes ──
+  function showAlert(msg, type = 'error') {
+    alertEl.className = `alert alert-${type} visible`;
+    alertText.textContent = msg;
+    alertEl.querySelector('svg').innerHTML = type === 'error'
+      ? `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`
+      : `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`;
+  }
+
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    spinner.style.display = loading ? 'block' : 'none';
+    btnText.textContent = loading ? 'Création en cours…' : 'Créer mon compte';
+  }
+
+  // ── Soumission ──
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName   = document.getElementById('firstName').value.trim();
+    const lastName    = document.getElementById('lastName').value.trim();
+    const companyName = document.getElementById('companyName').value.trim();
+    const email       = document.getElementById('email').value.trim();
+    const phone       = document.getElementById('phone').value.trim();
+    const password    = passInput.value;
+    const cgv         = document.getElementById('accept-cgv').checked;
+
+    if (!firstName || !lastName || !companyName || !email || !password) {
+      showAlert('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    if (password.length < 8) {
+      showAlert('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+
+    if (!cgv) {
+      showAlert('Vous devez accepter les Conditions Générales d\'Utilisation.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          password,
+          phone: phone || undefined,
+          companyName,
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = Array.isArray(data.message)
+          ? data.message[0]
+          : (data.message || data.error || `Erreur ${res.status}`);
+        throw new Error(msg);
+      }
+
+      showAlert('Compte créé ! Vérifiez votre email pour activer votre compte.', 'success');
+      btnText.textContent = 'Compte créé !';
+
+      // Redirection vers login après 3s
+      setTimeout(() => window.location.replace('login.html'), 3000);
+
+    } catch (err) {
+      showAlert(err.message || 'Une erreur est survenue. Réessayez.');
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>

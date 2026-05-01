@@ -165,6 +165,7 @@ tryAlter('ALTER TABLE devis ADD COLUMN acompte_amount REAL DEFAULT 0');
 tryAlter('ALTER TABLE devis ADD COLUMN acompte_received_at DATETIME');
 tryAlter('ALTER TABLE devis ADD COLUMN last_reminder_at DATETIME');
 tryAlter('ALTER TABLE devis ADD COLUMN reminder_count INTEGER DEFAULT 0');
+tryAlter('ALTER TABLE devis ADD COLUMN liste_achats TEXT DEFAULT NULL');
 
 // Init depuis .env si settings vides
 const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();

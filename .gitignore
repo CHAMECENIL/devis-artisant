@@ -2,3 +2,20 @@ node_modules/
 .env
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
+
+# Compiled output
+dist/
+saas-backend/dist/
+
+# Logs
+logs/
+saas-backend/logs/
+*.log
+
+# Storage (fichiers uploadés par les utilisateurs)
+storage/
+
+# Claude local settings
+.claude/settings.local.json

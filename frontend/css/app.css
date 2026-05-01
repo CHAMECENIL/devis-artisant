@@ -129,6 +129,95 @@ html, body {
   font-size: 12px;
 }
 
+/* ── Widget utilisateur (bas de sidebar) ── */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  min-width: 0;
+}
+
+.sidebar-user-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  background: rgba(96,165,250,0.25);
+  border: 1.5px solid rgba(96,165,250,0.4);
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-company {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-logout {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-user-logout:hover {
+  background: rgba(239,68,68,0.15);
+  color: #fca5a5;
+}
+
+/* Lien admin dans la sidebar */
+.nav-item-admin {
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #a78bfa !important;
+  text-decoration: none;
+}
+.nav-item-admin:hover {
+  background: rgba(124,58,237,0.12) !important;
+  color: #c4b5fd !important;
+}
+.nav-item-admin svg {
+  color: #7c3aed;
+}
+
 .status-indicator {
   width: 8px;
   height: 8px;
@@ -1387,6 +1476,8 @@ html, body {
 .action-btn:hover { background: #f3f4f6; border-color: #d1d5db; }
 .action-btn-orange { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
 .action-btn-orange:hover { background: #fef3c7; }
+.action-btn-teal { border-color: #0d9488; color: #0f766e; background: #f0fdfa; }
+.action-btn-teal:hover { background: #ccfbf1; }
 .action-btn-blue { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
 .action-btn-blue:hover { background: #dbeafe; }
 .action-btn-purple { border-color: #8b5cf6; color: #6d28d9; background: #f5f3ff; }
@@ -1429,3 +1520,139 @@ html, body {
 .toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
 .toggle-switch input:checked + .toggle-slider { background: var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+/* =============================================
+   ALERTES CHANTIER
+   ============================================= */
+
+.alertes-chantier {
+  margin: 0 24px 16px;
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.alertes-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #92400e;
+  margin-bottom: 10px;
+}
+.alertes-header svg { flex-shrink: 0; stroke: #f59e0b; }
+.alertes-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #78350f;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+/* =============================================
+   ÉDITEUR LIGNES IA
+   ============================================= */
+
+#ai-editable-lignes {
+  margin: 0 24px 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.editable-lignes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.editable-lignes-header h3 { font-size: 14px; font-weight: 600; color: #1e293b; margin: 0; }
+.editable-table-wrap { overflow-x: auto; }
+.editable-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.editable-table th {
+  background: #f8fafc;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
+}
+.editable-table td {
+  padding: 4px 4px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+.editable-table tr:hover td { background: #f8fafc; }
+.cell-input {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 13px;
+  background: transparent;
+  transition: border-color .15s, background .15s;
+}
+.cell-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+}
+.cell-num { text-align: right; width: 80px; }
+.cell-sm { width: 60px; }
+.cell-total { font-weight: 600; color: #1e293b; padding: 0 10px; text-align: right; }
+.btn-del-ligne {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0.6;
+}
+.btn-del-ligne:hover { opacity: 1; background: #fef2f2; }
+
+.devis-remise-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #374151;
+}
+.devis-remise-row label { font-weight: 500; }
+.total-remise { color: #dc2626 !important; }
+.total-remise span:last-child { color: #dc2626; font-weight: 600; }
+
+/* =============================================
+   LISTE DE COURSES FOURNISSEURS
+   ============================================= */
+
+.liste-achats-card {
+  margin: 0 24px 24px;
+  padding: 20px;
+}
+.liste-achats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.liste-achats-header h3 { margin: 0 0 4px; font-size: 15px; }
+.duree-detail { font-size: 12.5px; color: #6b7280; margin: 0; }
+.achats-table .fournisseur-cell { font-size: 12px; color: #4b5563; }
+.achats-table .notes-cell { font-size: 12px; color: #9ca3af; font-style: italic; }
+.achats-table tfoot td {
+  background: #f8fafc;
+  padding: 10px 12px;
+  font-size: 13px;
+  border-top: 2px solid #e5e7eb;
+}

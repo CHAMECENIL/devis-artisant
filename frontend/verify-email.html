@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vérification email — Devis Artisant</title>
+  <style>
+    :root {
+      --primary: #1a56db; --primary-dark: #1e429f;
+      --danger: #e02424; --danger-light: #fde8e8;
+      --success: #057a55; --success-light: #def7ec;
+      --warning: #c27803; --warning-light: #fdf6b2;
+      --border: #e5e7eb; --text: #111827; --text-muted: #6b7280;
+      --bg: #f3f4f6; --radius: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px; color: var(--text); background: var(--bg); line-height: 1.5;
+    }
+
+    .page {
+      min-height: 100vh; display: flex;
+      align-items: center; justify-content: center; padding: 24px;
+    }
+
+    .card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+      padding: 40px; width: 100%; max-width: 440px;
+      text-align: center;
+    }
+
+    /* Spinner de chargement */
+    .loading-state .spinner-lg {
+      width: 56px; height: 56px;
+      border: 4px solid #e5e7eb; border-top-color: var(--primary);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-state p { color: var(--text-muted); font-size: 15px; }
+
+    /* État succès */
+    .icon-circle {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .icon-success { background: var(--success-light); border: 2px solid #6ee7b7; }
+    .icon-error   { background: var(--danger-light);  border: 2px solid #fca5a5; }
+    .icon-warning { background: var(--warning-light); border: 2px solid #f6c462; }
+
+    .icon-success svg { color: var(--success); }
+    .icon-error   svg { color: var(--danger); }
+    .icon-warning svg { color: var(--warning); }
+
+    .state-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .state-sub   { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 28px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 42px; padding: 0 24px; border-radius: var(--radius);
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      border: none; transition: background 0.15s; text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+
+    /* Timer redirection */
+    .redirect-timer {
+      font-size: 12px; color: var(--text-light); margin-top: 16px;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <div class="card">
+
+    <!-- ── Chargement ── -->
+    <div id="state-loading" class="loading-state">
+      <div class="spinner-lg"></div>
+      <p>Vérification de votre email en cours…</p>
+    </div>
+
+    <!-- ── Succès ── -->
+    <div id="state-success" class="hidden">
+      <div class="icon-circle icon-success">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <p class="state-title">Email vérifié ! 🎉</p>
+      <p class="state-sub">Votre compte est activé. Vous êtes connecté et votre essai gratuit de 14 jours commence maintenant.</p>
+      <a href="index.html" class="btn btn-primary">Accéder à mon espace →</a>
+      <p class="redirect-timer" id="redirect-timer">Redirection automatique dans <strong id="countdown">5</strong>s…</p>
+    </div>
+
+    <!-- ── Token expiré ── -->
+    <div id="state-expired" class="hidden">
+      <div class="icon-circle icon-warning">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <p class="state-title">Lien expiré</p>
+      <p class="state-sub">Ce lien de vérification n'est valable que <strong>24 heures</strong>. Le vôtre a expiré. Saisissez votre email pour en recevoir un nouveau.</p>
+      <div class="btn-group">
+        <div style="display:flex;gap:8px;flex-direction:column;align-items:stretch">
+          <input id="resend-email" type="email" placeholder="votre@email.fr"
+            style="height:42px;padding:0 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;outline:none;width:100%" />
+          <button class="btn btn-primary" id="resend-btn" style="width:100%">Renvoyer l'email</button>
+        </div>
+        <a href="login.html" class="btn btn-outline">Retour à la connexion</a>
+      </div>
+      <p id="resend-msg" style="font-size:13px;margin-top:12px;color:var(--success)"></p>
+    </div>
+
+    <!-- ── Erreur générique ── -->
+    <div id="state-error" class="hidden">
+      <div class="icon-circle icon-error">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <p class="state-title">Lien invalide</p>
+      <p class="state-sub" id="error-msg">Ce lien de vérification est invalide ou a déjà été utilisé.</p>
+      <div class="btn-group">
+        <a href="login.html" class="btn btn-primary">Retour à la connexion</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script>
+  // Afficher / masquer les états
+  function showState(id) {
+    ['state-loading', 'state-success', 'state-expired', 'state-error'].forEach(s => {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+  }
+
+  // Démarrer le countdown de redirection
+  function startRedirectCountdown() {
+    let secs = 5;
+    const el = document.getElementById('countdown');
+    const tick = () => {
+      if (secs <= 0) { window.location.replace('index.html'); return; }
+      el.textContent = secs--;
+      setTimeout(tick, 1000);
+    };
+    tick();
+  }
+
+  // Lire le token depuis l'URL
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('token');
+
+  if (!token) {
+    showState('state-error');
+    document.getElementById('error-msg').textContent =
+      'Aucun token de vérification trouvé dans ce lien.';
+  } else {
+    // Appel API de vérification
+    Auth.verifyEmail(token)
+      .then(() => {
+        showState('state-success');
+        startRedirectCountdown();
+      })
+      .catch((err) => {
+        const msg = (err.message || '').toLowerCase();
+        if (msg.includes('expir') || msg.includes('expired')) {
+          showState('state-expired');
+        } else {
+          showState('state-error');
+          document.getElementById('error-msg').textContent =
+            err.message || 'Ce lien est invalide ou a déjà été utilisé.';
+        }
+      });
+  }
+
+  // Bouton renvoi depuis état "expiré"
+  document.getElementById('resend-btn').addEventListener('click', async () => {
+    const email = document.getElementById('resend-email').value.trim();
+    if (!email) return;
+
+    const btn = document.getElementById('resend-btn');
+    btn.disabled = true;
+    btn.textContent = 'Envoi…';
+
+    try {
+      await Auth.resendVerification(email);
+    } catch { /* message générique pour tout cas */ }
+
+    document.getElementById('resend-msg').textContent =
+      'Si cet email est enregistré et non vérifié, un nouveau lien a été envoyé.';
+    btn.textContent = 'Email envoyé ✓';
+  });
+</script>
+</body>
+</html>

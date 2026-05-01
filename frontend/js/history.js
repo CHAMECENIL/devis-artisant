@@ -69,6 +69,7 @@ const History = (() => {
   function renderRow(d) {
     const hasEmail = !!d.client_email;
     const isSigned = !!d.signed_at;
+    const hasListeAchats = !!d.liste_achats;
     const statusBadge = kanbanBadge(d);
     return `
       <tr data-id="${d.id}" style="cursor:pointer">
@@ -94,6 +95,12 @@ const History = (() => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               Renta
             </button>
+            <!-- Liste de courses CSV -->
+            ${hasListeAchats ? `
+            <button class="action-btn action-btn-teal" data-action="liste-achats" data-id="${d.id}" title="Télécharger la liste de courses fournisseurs (CSV)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              Courses
+            </button>` : ''}
             <!-- Signature -->
             ${!isSigned && hasEmail ? `
             <button class="action-btn action-btn-blue" data-action="sign" data-id="${d.id}" data-numero="${esc(d.numero)}" title="Envoyer pour signature électronique">
@@ -158,6 +165,10 @@ const History = (() => {
 
       case 'rentabilite':
         window.open(API.devis.rentabiliteUrl(id), '_blank');
+        break;
+
+      case 'liste-achats':
+        window.open(API.devis.listeAchatsUrl(id), '_blank');
         break;
 
       case 'sign':
