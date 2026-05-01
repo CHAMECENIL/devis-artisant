@@ -1,22 +1,16 @@
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 
 const DB_PATH = path.join(__dirname, '../../database/devis.db');
-
-// Créer le répertoire si nécessaire
 const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new Database(DB_PATH);
+const db = new DatabaseSync(DB_PATH);
+db.exec('PRAGMA journal_mode=WAL');
+db.exec('PRAGMA foreign_keys=ON');
 
-// Performance
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-// Initialisation du schéma
+// Schéma principal
 db.exec(`
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY,
@@ -61,6 +55,7 @@ db.exec(`
     chantier_address TEXT,
     chantier_description TEXT,
     status TEXT DEFAULT 'draft',
+    kanban_stage TEXT DEFAULT 'devis',
     total_ht REAL DEFAULT 0,
     total_tva REAL DEFAULT 0,
     total_ttc REAL DEFAULT 0,
@@ -76,6 +71,14 @@ db.exec(`
     html_content TEXT,
     pdf_path TEXT,
     sent_at DATETIME,
+    signature_token TEXT,
+    signed_at DATETIME,
+    signed_by TEXT,
+    signed_ip TEXT,
+    acompte_amount REAL DEFAULT 0,
+    acompte_received_at DATETIME,
+    last_reminder_at DATETIME,
+    reminder_count INTEGER DEFAULT 0,
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -118,41 +121,61 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  -- Insérer les paramètres par défaut si vides
+  CREATE TABLE IF NOT EXISTS email_templates (
+    id INTEGER PRIMARY KEY,
+    type TEXT UNIQUE NOT NULL,
+    label TEXT,
+    subject TEXT,
+    body TEXT,
+    enabled INTEGER DEFAULT 1,
+    delay_days INTEGER DEFAULT 3
+  );
+
+  CREATE TABLE IF NOT EXISTS reminders_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    devis_id INTEGER REFERENCES devis(id),
+    type TEXT,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    recipient TEXT,
+    status TEXT DEFAULT 'sent',
+    error_msg TEXT
+  );
+
   INSERT OR IGNORE INTO settings (id) VALUES (1);
+
+  INSERT OR IGNORE INTO email_templates (id, type, label, subject, body, delay_days) VALUES
+    (1, 'devis_relance', 'Relance devis', 'Rappel : votre devis {{numero}} est en attente',
+     'Bonjour {{client_name}},\n\nNous vous rappelons que votre devis n° {{numero}} d''un montant de {{total_ttc}} est en attente de votre validation.\n\nN''hésitez pas à nous contacter pour toute question.\n\nCordialement,\n{{company_name}}', 5),
+    (2, 'signature_relance', 'Relance signature', 'Rappel : signez votre devis {{numero}}',
+     'Bonjour {{client_name}},\n\nVotre devis n° {{numero}} attend votre signature électronique.\n\nCliquez ici pour signer : {{signature_link}}\n\nCordialement,\n{{company_name}}', 3),
+    (3, 'acompte_relance', 'Relance acompte', 'Rappel : acompte requis pour démarrer les travaux',
+     'Bonjour {{client_name}},\n\nAfin de planifier et démarrer vos travaux, nous vous rappelons que l''acompte de {{acompte_amount}} est requis.\n\nCordialement,\n{{company_name}}', 7),
+    (4, 'paiement_relance', 'Relance paiement', 'Rappel : solde à régler — devis {{numero}}',
+     'Bonjour {{client_name}},\n\nNous vous rappelons que le solde de {{total_ttc}} pour les travaux réalisés est à régler.\n\nCordialement,\n{{company_name}}', 14);
 `);
 
-// Mettre à jour depuis .env si settings vides
+// Migrations : ajout colonnes si manquantes (SQLite ALTER TABLE ne supporte pas IF NOT EXISTS)
+const tryAlter = (sql) => { try { db.exec(sql); } catch(e) { /* colonne déjà présente */ } };
+tryAlter('ALTER TABLE devis ADD COLUMN kanban_stage TEXT DEFAULT \'devis\'');
+tryAlter('ALTER TABLE devis ADD COLUMN signature_token TEXT');
+tryAlter('ALTER TABLE devis ADD COLUMN signed_at DATETIME');
+tryAlter('ALTER TABLE devis ADD COLUMN signed_by TEXT');
+tryAlter('ALTER TABLE devis ADD COLUMN signed_ip TEXT');
+tryAlter('ALTER TABLE devis ADD COLUMN acompte_amount REAL DEFAULT 0');
+tryAlter('ALTER TABLE devis ADD COLUMN acompte_received_at DATETIME');
+tryAlter('ALTER TABLE devis ADD COLUMN last_reminder_at DATETIME');
+tryAlter('ALTER TABLE devis ADD COLUMN reminder_count INTEGER DEFAULT 0');
+tryAlter('ALTER TABLE devis ADD COLUMN liste_achats TEXT DEFAULT NULL');
+
+// Init depuis .env si settings vides
 const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
 if (settings && !settings.company_name && process.env.COMPANY_NAME) {
-  db.prepare(`
-    UPDATE settings SET
-      company_name = ?,
-      company_address = ?,
-      company_siret = ?,
-      company_phone = ?,
-      company_email = ?,
-      depot_address = ?,
-      margin_material = ?,
-      hourly_rate = ?,
-      km_rate = ?,
-      tva_rate = ?,
-      google_maps_key = ?,
-      anthropic_key = ?
-    WHERE id = 1
-  `).run(
-    process.env.COMPANY_NAME || '',
-    process.env.COMPANY_ADDRESS || '',
-    process.env.COMPANY_SIRET || '',
-    process.env.COMPANY_PHONE || '',
-    process.env.COMPANY_EMAIL || '',
-    process.env.COMPANY_DEPOT_ADDRESS || '',
-    parseFloat(process.env.DEFAULT_MARGIN_MATERIAL || '30'),
-    parseFloat(process.env.DEFAULT_HOURLY_RATE || '15'),
-    parseFloat(process.env.DEFAULT_KM_RATE || '0.30'),
-    parseFloat(process.env.DEFAULT_TVA || '10'),
-    process.env.GOOGLE_MAPS_API_KEY || '',
-    process.env.ANTHROPIC_API_KEY || ''
+  db.prepare(`UPDATE settings SET company_name=?,company_address=?,company_siret=?,company_phone=?,company_email=?,depot_address=?,margin_material=?,hourly_rate=?,km_rate=?,tva_rate=?,google_maps_key=?,anthropic_key=? WHERE id=1`).run(
+    process.env.COMPANY_NAME||'', process.env.COMPANY_ADDRESS||'', process.env.COMPANY_SIRET||'',
+    process.env.COMPANY_PHONE||'', process.env.COMPANY_EMAIL||'', process.env.COMPANY_DEPOT_ADDRESS||'',
+    parseFloat(process.env.DEFAULT_MARGIN_MATERIAL||'30'), parseFloat(process.env.DEFAULT_HOURLY_RATE||'15'),
+    parseFloat(process.env.DEFAULT_KM_RATE||'0.30'), parseFloat(process.env.DEFAULT_TVA||'10'),
+    process.env.GOOGLE_MAPS_API_KEY||'', process.env.ANTHROPIC_API_KEY||''
   );
 }
 

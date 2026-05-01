@@ -9,7 +9,7 @@ const aiService = require('../services/aiService');
 
 function generateNumero() {
   const year = new Date().getFullYear();
-  const count = db.prepare('SELECT COUNT(*) as c FROM devis').get().c + 1;
+  const count = Number(db.prepare('SELECT COUNT(*) as c FROM devis').get().c) + 1;
   return `DEV-${year}-${String(count).padStart(4, '0')}`;
 }
 
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       clientName, clientEmail, clientAddress,
       chantierAddress, description,
       lignes = [], distanceKm = 0, dureeJours = 1,
-      notes
+      notes, listeAchats
     } = req.body;
 
     const settings = db.prepare('SELECT * FROM settings WHERE id = 1').get();
@@ -73,11 +73,12 @@ router.post('/', async (req, res) => {
         clientId = existingClient.id;
       } else {
         const result = db.prepare('INSERT INTO clients (name, email, address) VALUES (?, ?, ?)').run(clientName, clientEmail || '', clientAddress || '');
-        clientId = result.lastInsertRowid;
+        clientId = Number(result.lastInsertRowid);
       }
     }
 
     // Sauvegarder le devis
+    const listeAchatsJson = listeAchats ? JSON.stringify(listeAchats) : null;
     const result = db.prepare(`
       INSERT INTO devis (
         numero, client_id, client_name, client_email, client_address,
@@ -85,18 +86,18 @@ router.post('/', async (req, res) => {
         total_ht, total_tva, total_ttc,
         total_materials, total_labor, total_travel,
         marge_brute, taux_marge, cout_reel, rentabilite_horaire,
-        duree_jours, distance_km, html_content, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        duree_jours, distance_km, html_content, notes, liste_achats
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       numero, clientId, clientName || '', clientEmail || '', clientAddress || '',
       chantierAddress || '', description || '', 'draft',
       totals.totalHT, totals.totalTVA, totals.totalTTC,
       totals.totalMaterials, totals.totalLabor, totals.totalTravel,
       totals.margeBrute, totals.tauxMarge, totals.coutReel, totals.rentabiliteHoraire,
-      dureeJours, distanceKm, htmlContent, notes || ''
+      dureeJours, distanceKm, htmlContent, notes || '', listeAchatsJson
     );
 
-    const devisId = result.lastInsertRowid;
+    const devisId = Number(result.lastInsertRowid);
 
     // Sauvegarder les lignes
     if (lignes.length > 0) {
@@ -105,16 +106,22 @@ router.post('/', async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       lignes.forEach((ligne, i) => {
+        // Accepte camelCase ET snake_case depuis le frontend
+        const pu = ligne.prixUnitaireHT || ligne.prix_unitaire_ht || ligne.prix_unitaire || 0;
+        const qte = ligne.quantite || 0;
+        const mat = ligne.coutMateriau || ligne.cout_materiau || 0;
+        const mo  = ligne.coutMainOeuvre || ligne.cout_main_oeuvre || 0;
+        const hmo = ligne.heuresMO || ligne.heures_mo || 0;
         insertLigne.run(
           devisId,
           ligne.designation || '',
           ligne.unite || 'u',
-          ligne.quantite || 0,
-          ligne.prixUnitaireHT || 0,
-          (ligne.quantite || 0) * (ligne.prixUnitaireHT || 0),
-          ligne.coutMateriau || 0,
-          ligne.coutMainOeuvre || 0,
-          ligne.heuresMO || 0,
+          qte,
+          pu,
+          qte * pu,
+          mat,
+          mo,
+          hmo,
           ligne.notes || '',
           i
         );
@@ -130,8 +137,8 @@ router.post('/', async (req, res) => {
       console.error('Erreur PDF (non bloquant):', pdfErr.message);
     }
 
-    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(devisId);
-    res.json({ success: true, devis, totals });
+    const devis = db.prepare('SELECT * FROM devis WHERE id = ?').get(Number(devisId));
+    res.json({ success: true, id: Number(devisId), numero, devis, totals });
 
   } catch (error) {
     console.error('Erreur sauvegarde devis:', error.message);
@@ -187,6 +194,31 @@ router.get('/:id/pdf', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// GET /api/devis/:id/liste-achats - Télécharger liste de courses CSV
+router.get('/:id/liste-achats', (req, res) => {
+  const devis = db.prepare('SELECT numero, client_name, liste_achats FROM devis WHERE id = ?').get(req.params.id);
+  if (!devis) return res.status(404).json({ error: 'Devis non trouvé' });
+  if (!devis.liste_achats) return res.status(404).json({ error: 'Aucune liste de courses pour ce devis' });
+
+  let items = [];
+  try { items = JSON.parse(devis.liste_achats); } catch (e) { return res.status(500).json({ error: 'Données corrompues' }); }
+
+  const header = 'Fourniture;Quantité;Unité;Prix achat estimé (€);Fournisseur conseillé;Total achat (€);Notes';
+  const rows = items.map(a => [
+    a.designation, a.quantite, a.unite,
+    (a.prixAchatEstime || 0).toString().replace('.', ','),
+    a.fournisseurConseille,
+    (a.total || 0).toString().replace('.', ','),
+    a.notes
+  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(';'));
+
+  const csv = '\ufeff' + [header, ...rows].join('\r\n');
+  const filename = `liste-courses-${devis.numero}.csv`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
 });
 
 // GET /api/devis/:id/rentabilite - Fiche rentabilité

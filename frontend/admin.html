@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console — Devis Artisant</title>
+
+  <!-- AUTH GUARD admin -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('adminToken');
+      if (!t) { document.write('<meta http-equiv="refresh" content="0;url=/admin-login.html">'); return; }
+      try {
+        var p = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        if (p.exp && p.exp < Math.floor(Date.now()/1000)) {
+          localStorage.removeItem('adminToken');
+          document.write('<meta http-equiv="refresh" content="0;url=/admin-login.html?msg=Session+expir%C3%A9e">');
+        }
+      } catch(e) {
+        localStorage.removeItem('adminToken');
+        document.write('<meta http-equiv="refresh" content="0;url=/admin-login.html">');
+      }
+    })();
+  </script>
+  <script src="/js/admin-auth.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ap: #7c3aed;   --ap-d: #5b21b6;  --ap-l: #a78bfa;
+      --bg:  #0d0d1a;  --sfc: #16162a;   --sfc2: #1e1e35;
+      --sb:  #110a24;
+      --bdr: rgba(124,58,237,.18);  --bdr2: rgba(255,255,255,.07);
+      --txt: #f1f5f9;  --muted: #94a3b8; --dim: #64748b;
+      --ok:  #22c55e;  --err: #ef4444;   --warn: #f59e0b; --info: #3b82f6;
+      --r: 10px;
+    }
+    html,body { height:100%; }
+    body { font-family: system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); display:flex; height:100vh; overflow:hidden; font-size:13px; }
+
+    /* ═══════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════ */
+    #a-sidebar {
+      width: 220px; flex-shrink:0;
+      background: var(--sb);
+      border-right: 1px solid var(--bdr);
+      display: flex; flex-direction: column;
+      height: 100vh; overflow-y: auto; overflow-x: hidden;
+    }
+    .a-logo {
+      display:flex; align-items:center; gap:9px;
+      padding: 18px 14px 14px;
+      font-weight:700; font-size:14px;
+      border-bottom: 1px solid var(--bdr);
+      color:#c4b5fd;
+    }
+    .a-logo svg { width:20px;height:20px;color:var(--ap);flex-shrink:0; }
+    .a-logo-badge {
+      font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      background:rgba(124,58,237,.25); border:1px solid rgba(124,58,237,.4);
+      color:#c4b5fd; border-radius:4px; padding:2px 5px; margin-left:auto;
+    }
+    .a-nav { flex:1; padding:10px 8px; display:flex; flex-direction:column; gap:2px; }
+    .a-sep { height:1px; background:var(--bdr2); margin:6px 4px; }
+    .a-nav-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); padding:4px 10px 2px; }
+    .ni {
+      display:flex; align-items:center; gap:9px;
+      padding:9px 10px; border-radius:8px; cursor:pointer;
+      color:var(--muted); transition:all .15s; user-select:none; font-size:13px;
+    }
+    .ni svg { width:15px;height:15px;flex-shrink:0; }
+    .ni:hover { background:rgba(124,58,237,.1); color:var(--txt); }
+    .ni.active { background:rgba(124,58,237,.18); color:#c4b5fd; }
+    .ni.active svg { color:var(--ap); }
+    .a-sidebar-footer {
+      padding:10px 8px;
+      border-top:1px solid var(--bdr);
+    }
+    .a-app-link {
+      display:flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:8px; color:var(--dim);
+      text-decoration:none; font-size:12px; transition:all .15s; margin-bottom:6px;
+    }
+    .a-app-link svg { width:13px;height:13px; }
+    .a-app-link:hover { background:rgba(255,255,255,.04); color:var(--muted); }
+    .a-user-widget {
+      display:flex; align-items:center; gap:9px;
+      padding:8px; border-radius:8px; background:rgba(255,255,255,.04);
+    }
+    .a-user-avatar {
+      width:30px;height:30px;border-radius:50%;
+      background:linear-gradient(135deg,var(--ap),#9333ea);
+      display:flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:700;color:#fff;flex-shrink:0;
+    }
+    .a-user-info { flex:1; min-width:0; }
+    .a-user-name { font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .a-user-role { font-size:10px;color:var(--ap-l); }
+    .a-logout-btn {
+      background:none;border:none;cursor:pointer;color:var(--dim);
+      padding:4px;border-radius:6px;display:flex;transition:all .15s;
+    }
+    .a-logout-btn:hover { color:var(--err);background:rgba(239,68,68,.1); }
+
+    /* ═══════════════════════════════════════════
+       MAIN
+    ═══════════════════════════════════════════ */
+    #a-main { flex:1; overflow-y:auto; display:flex; flex-direction:column; min-width:0; }
+    .a-topbar {
+      position:sticky; top:0; z-index:40;
+      background:rgba(13,13,26,.92); backdrop-filter:blur(8px);
+      border-bottom:1px solid var(--bdr2);
+      padding:0 24px; height:52px;
+      display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+    }
+    .a-topbar-title { font-size:14px;font-weight:600; }
+    .a-topbar-right { display:flex;align-items:center;gap:10px; }
+
+    /* ═══════════════════════════════════════════
+       SECTIONS
+    ═══════════════════════════════════════════ */
+    .a-sec { display:none; padding:24px; }
+    .a-sec.active { display:block; }
+    .a-sec-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:18px; gap:10px; flex-wrap:wrap;
+    }
+    .a-sec-hdr h2 { font-size:17px;font-weight:700; }
+
+    /* ═══════════════════════════════════════════
+       KPI
+    ═══════════════════════════════════════════ */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; }
+    .kpi-card {
+      background:var(--sfc); border:1px solid var(--bdr2); border-radius:var(--r);
+      padding:18px; display:flex; align-items:center; gap:14px;
+    }
+    .kpi-ico {
+      width:40px;height:40px;border-radius:9px;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    .kpi-ico svg { width:18px;height:18px; }
+    .ico-p { background:rgba(124,58,237,.15);color:#a78bfa; }
+    .ico-g { background:rgba(34,197,94,.12);color:#86efac; }
+    .ico-b { background:rgba(59,130,246,.12);color:#93c5fd; }
+    .ico-y { background:rgba(245,158,11,.12);color:#fcd34d; }
+    .ico-r { background:rgba(239,68,68,.12);color:#fca5a5; }
+    .kpi-val { font-size:22px;font-weight:700;line-height:1; }
+    .kpi-lbl { font-size:11px;color:var(--muted);margin-top:3px; }
+
+    /* ═══════════════════════════════════════════
+       CARDS
+    ═══════════════════════════════════════════ */
+    .a-card { background:var(--sfc); border:1px solid var(--bdr2); border-radius:var(--r); }
+    .a-card-hdr {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 18px; border-bottom:1px solid var(--bdr2);
+    }
+    .a-card-hdr h3 { font-size:13px;font-weight:600; }
+    .a-card-body { padding:16px 18px; }
+
+    /* ═══════════════════════════════════════════
+       TABLE
+    ═══════════════════════════════════════════ */
+    .t-wrap { background:var(--sfc);border:1px solid var(--bdr2);border-radius:var(--r);overflow:auto; }
+    .a-tbl { width:100%;border-collapse:collapse;font-size:12.5px; }
+    .a-tbl th {
+      padding:10px 12px; text-align:left; font-size:10.5px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+      background:rgba(255,255,255,.025); border-bottom:1px solid var(--bdr2); white-space:nowrap;
+    }
+    .a-tbl td { padding:11px 12px; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+    .a-tbl tr:last-child td { border-bottom:none; }
+    .a-tbl tr:hover td { background:rgba(255,255,255,.02); }
+    .t-empty { text-align:center;color:var(--muted);padding:40px !important; }
+    .t-cell-main { font-weight:500; }
+    .t-cell-sub { font-size:11px;color:var(--muted);margin-top:2px; }
+
+    /* ═══════════════════════════════════════════
+       BADGES
+    ═══════════════════════════════════════════ */
+    .badge { display:inline-flex;align-items:center;padding:2px 7px;border-radius:100px;font-size:10.5px;font-weight:600; }
+    .bg-g { background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25); }
+    .bg-r { background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25); }
+    .bg-b { background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(59,130,246,.25); }
+    .bg-y { background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.25); }
+    .bg-p { background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.3); }
+    .bg-grey { background:rgba(148,163,184,.1);color:#94a3b8;border:1px solid rgba(148,163,184,.2); }
+
+    /* Plan badges */
+    .plan-bronze  { background:rgba(180,83,9,.15);color:#fbbf24;border:1px solid rgba(180,83,9,.3); }
+    .plan-silver  { background:rgba(100,116,139,.15);color:#cbd5e1;border:1px solid rgba(100,116,139,.3); }
+    .plan-gold    { background:rgba(217,119,6,.15);color:#fde68a;border:1px solid rgba(217,119,6,.3); }
+
+    /* ═══════════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════════ */
+    .btn { display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:none;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s; }
+    .btn svg { width:13px;height:13px; }
+    .btn-pri { background:var(--ap);color:#fff; }
+    .btn-pri:hover { background:var(--ap-d); }
+    .btn-sec { background:transparent;border:1px solid var(--bdr2);color:var(--muted); }
+    .btn-sec:hover { border-color:var(--ap);color:var(--txt); }
+    .btn-red { background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5; }
+    .btn-red:hover { background:rgba(239,68,68,.2); }
+    .btn-ok  { background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#86efac; }
+    .btn-ok:hover { background:rgba(34,197,94,.2); }
+    .btn:disabled { opacity:.45;cursor:not-allowed; }
+
+    /* Icon button */
+    .ibtn {
+      width:26px;height:26px;border:none;border-radius:6px;
+      background:rgba(255,255,255,.06);color:var(--muted);
+      cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+      transition:all .15s;margin-right:3px;
+    }
+    .ibtn svg { width:12px;height:12px; }
+    .ibtn:hover { background:rgba(255,255,255,.12);color:var(--txt); }
+    .ibtn-r:hover { background:rgba(239,68,68,.15);color:#fca5a5; }
+    .ibtn-g:hover { background:rgba(34,197,94,.15);color:#86efac; }
+    .ibtn-p:hover { background:rgba(124,58,237,.2);color:#c4b5fd; }
+    .ibtn-y:hover { background:rgba(245,158,11,.15);color:#fcd34d; }
+
+    /* ═══════════════════════════════════════════
+       FILTER BAR
+    ═══════════════════════════════════════════ */
+    .fbar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px; }
+    .finp { padding:7px 11px;background:var(--sfc);border:1px solid var(--bdr2);border-radius:8px;color:var(--txt);font-size:12.5px;outline:none;transition:border-color .15s; }
+    .finp:focus { border-color:var(--ap); }
+    .finp-w { width:200px; }
+    select.finp option { background:#1a1a2e; }
+
+    /* ═══════════════════════════════════════════
+       PAGINATION
+    ═══════════════════════════════════════════ */
+    .t-pages {
+      display:flex;align-items:center;gap:8px;justify-content:flex-end;
+      padding:10px 14px;font-size:12px;color:var(--muted);border-top:1px solid var(--bdr2);
+    }
+    .pg-btn {
+      width:28px;height:28px;border:1px solid var(--bdr2);border-radius:6px;
+      background:transparent;color:var(--muted);cursor:pointer;font-size:15px;
+      display:flex;align-items:center;justify-content:center;transition:all .15s;
+    }
+    .pg-btn:hover:not(:disabled) { border-color:var(--ap);color:var(--txt); }
+    .pg-btn:disabled { opacity:.3;cursor:not-allowed; }
+
+    /* ═══════════════════════════════════════════
+       TOAST
+    ═══════════════════════════════════════════ */
+    #at-box { position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none; }
+    .at { padding:11px 15px;border-radius:9px;font-size:12.5px;font-weight:500;opacity:0;transform:translateX(18px);transition:all .25s;pointer-events:auto;max-width:300px; }
+    .at.show { opacity:1;transform:translateX(0); }
+    .at-s { background:#14532d;border:1px solid rgba(34,197,94,.3);color:#86efac; }
+    .at-e { background:#450a0a;border:1px solid rgba(239,68,68,.3);color:#fca5a5; }
+    .at-i { background:#1e1b4b;border:1px solid rgba(124,58,237,.3);color:#c4b5fd; }
+    .at-w { background:#422006;border:1px solid rgba(245,158,11,.3);color:#fcd34d; }
+
+    /* ═══════════════════════════════════════════
+       MODAL
+    ═══════════════════════════════════════════ */
+    #am { display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center; }
+    #am-ov { position:absolute;inset:0;background:rgba(0,0,0,.65); }
+    .am-box {
+      position:relative;background:#1a1a2e;border:1px solid var(--bdr);border-radius:12px;
+      width:560px;max-width:calc(100vw - 32px);max-height:82vh;overflow-y:auto;
+      box-shadow:0 24px 64px rgba(0,0,0,.5);
+    }
+    .am-hdr {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 18px;border-bottom:1px solid var(--bdr2);position:sticky;top:0;background:#1a1a2e;z-index:1;
+    }
+    #am-title { font-size:14px;font-weight:600; }
+    .am-close { background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:flex; }
+    .am-close:hover { color:var(--txt);background:rgba(255,255,255,.06); }
+    #am-body { padding:18px; }
+    #am-foot { padding:12px 18px;border-top:1px solid var(--bdr2);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end; }
+
+    /* ═══════════════════════════════════════════
+       DRAWER (CLIENT DETAIL)
+    ═══════════════════════════════════════════ */
+    #a-drawer-ov {
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
+    }
+    #a-drawer {
+      position:fixed;top:0;right:0;bottom:0;width:740px;max-width:100vw;
+      background:#12112b;border-left:1px solid var(--bdr);z-index:301;
+      transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+      display:flex;flex-direction:column;overflow:hidden;
+    }
+    #a-drawer.open { transform:translateX(0); }
+    .dr-hdr {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 20px;border-bottom:1px solid var(--bdr2);flex-shrink:0;
+      background:#12112b;
+    }
+    .dr-title { font-size:15px;font-weight:700; }
+    .dr-subtitle { font-size:12px;color:var(--muted);margin-top:2px; }
+    .dr-close { background:none;border:none;color:var(--muted);cursor:pointer;padding:5px;border-radius:7px;display:flex;transition:all .15s; }
+    .dr-close:hover { background:rgba(255,255,255,.07);color:var(--txt); }
+
+    /* Tabs */
+    .dr-tabs {
+      display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--bdr2);
+      background:#12112b;flex-shrink:0;overflow-x:auto;
+    }
+    .dr-tab {
+      padding:10px 14px;font-size:12.5px;font-weight:500;color:var(--muted);
+      cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;
+      transition:all .15s;
+    }
+    .dr-tab:hover { color:var(--txt); }
+    .dr-tab.active { color:#c4b5fd;border-bottom-color:var(--ap); }
+
+    /* Tab panels */
+    .dr-body { flex:1;overflow-y:auto;padding:20px; }
+    .dr-panel { display:none; }
+    .dr-panel.active { display:block; }
+
+    /* Drawer form helpers */
+    .dr-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px; }
+    .dr-grid3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px; }
+    .fg { display:flex;flex-direction:column;gap:5px; }
+    .fg label { font-size:11.5px;color:var(--muted);font-weight:500; }
+    .fg input,.fg select,.fg textarea {
+      padding:8px 11px;background:var(--sfc2);border:1px solid var(--bdr2);border-radius:8px;
+      color:var(--txt);font-size:12.5px;outline:none;transition:border-color .15s;
+    }
+    .fg input:focus,.fg select:focus,.fg textarea:focus { border-color:var(--ap); }
+    .fg select option { background:#1a1a2e; }
+    .fg textarea { resize:vertical;min-height:70px; }
+    .fg .fg-hint { font-size:11px;color:var(--dim); }
+    .fg-full { grid-column:1/-1; }
+    .dr-section-title {
+      font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+      color:var(--ap-l);padding:12px 0 8px;margin-bottom:4px;
+      border-bottom:1px solid var(--bdr2);
+    }
+    .dr-row { display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12.5px; }
+    .dr-row:last-child { border-bottom:none; }
+    .dr-row-lbl { color:var(--muted); }
+    .dr-row-val { font-weight:500;text-align:right; }
+    .dr-actions { display:flex;flex-direction:column;gap:8px;padding-top:10px; }
+    .dr-actions .btn { justify-content:flex-start; }
+
+    /* Token gauge */
+    .token-bar { height:5px;background:rgba(255,255,255,.08);border-radius:100px;margin-top:5px;overflow:hidden; }
+    .token-fill { height:100%;background:linear-gradient(90deg,var(--ap),#9333ea);border-radius:100px;transition:width .5s; }
+
+    /* History list */
+    .hist-list { display:flex;flex-direction:column;gap:8px;margin-top:4px; }
+    .hist-item {
+      display:flex;align-items:flex-start;gap:10px;padding:10px;
+      background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--bdr2);
+    }
+    .hist-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+    .hist-txt { font-size:12px;line-height:1.5; }
+    .hist-date { font-size:11px;color:var(--dim);margin-top:2px; }
+
+    /* Document row */
+    .doc-row {
+      display:flex;align-items:center;gap:10px;padding:10px;
+      background:rgba(255,255,255,.025);border-radius:8px;border:1px solid var(--bdr2);margin-bottom:8px;
+    }
+    .doc-ico { width:32px;height:32px;border-radius:8px;background:rgba(124,58,237,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .doc-ico svg { width:15px;height:15px;color:var(--ap-l); }
+    .doc-info { flex:1;min-width:0; }
+    .doc-name { font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .doc-meta { font-size:11px;color:var(--muted);margin-top:2px; }
+    .doc-upload-area {
+      border:1.5px dashed var(--bdr);border-radius:var(--r);padding:24px;
+      text-align:center;color:var(--muted);cursor:pointer;transition:all .2s;margin-top:10px;
+    }
+    .doc-upload-area:hover { border-color:var(--ap);color:var(--txt); }
+    .doc-upload-area svg { width:28px;height:28px;margin-bottom:8px;opacity:.5; }
+
+    /* Payment table */
+    .pay-badge { display:inline-block;padding:2px 7px;border-radius:100px;font-size:10.5px;font-weight:600; }
+
+    /* ═══════════════════════════════════════════
+       SECTION : API SETTINGS
+    ═══════════════════════════════════════════ */
+    .api-key-row {
+      display:flex;align-items:center;gap:10px;padding:12px 16px;
+      border-bottom:1px solid var(--bdr2);
+    }
+    .api-key-row:last-child { border-bottom:none; }
+    .api-key-name { font-weight:600;min-width:140px; }
+    .api-key-val {
+      flex:1;font-family:monospace;font-size:11.5px;
+      background:rgba(0,0,0,.2);border:1px solid var(--bdr2);border-radius:6px;
+      padding:5px 10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .api-key-perms { display:flex;gap:4px;flex-wrap:wrap; }
+    .perm-tag {
+      font-size:10px;padding:2px 6px;border-radius:4px;
+      background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#93c5fd;
+    }
+    .api-form-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+
+    /* ═══════════════════════════════════════════
+       SECTION : BILLING / PLANS
+    ═══════════════════════════════════════════ */
+    .plan-cards { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px; }
+    .plan-card {
+      background:var(--sfc);border:1px solid var(--bdr2);border-radius:12px;overflow:hidden;
+      transition:border-color .2s;
+    }
+    .plan-card:hover { border-color:var(--bdr); }
+    .plan-card-hdr {
+      padding:16px;border-bottom:1px solid var(--bdr2);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .plan-card-body { padding:16px; }
+    .plan-price-display { font-size:26px;font-weight:800;color:var(--txt); }
+    .plan-price-display sup { font-size:13px;font-weight:600;vertical-align:top;margin-top:6px; }
+    .plan-price-display span { font-size:12px;color:var(--muted);font-weight:400; }
+    .plan-feats { display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:12px; }
+    .plan-feat { display:flex;align-items:center;gap:7px;color:var(--muted); }
+    .plan-feat svg { width:12px;height:12px;color:var(--ok);flex-shrink:0; }
+    .plan-input {
+      width:100%;padding:6px 10px;background:rgba(0,0,0,.3);border:1px solid var(--bdr2);
+      border-radius:6px;color:var(--txt);font-size:12px;outline:none;margin-top:6px;
+    }
+    .plan-input:focus { border-color:var(--ap); }
+
+    /* ═══════════════════════════════════════════
+       SECTION : GED
+    ═══════════════════════════════════════════ */
+    .ged-grid { display:grid;grid-template-columns:280px 1fr;gap:16px; }
+    .ged-clients-list {
+      background:var(--sfc);border:1px solid var(--bdr2);border-radius:var(--r);
+      overflow:auto;max-height:calc(100vh - 200px);
+    }
+    .ged-client-item {
+      padding:10px 14px;border-bottom:1px solid var(--bdr2);cursor:pointer;transition:all .15s;
+    }
+    .ged-client-item:last-child { border-bottom:none; }
+    .ged-client-item:hover { background:rgba(124,58,237,.08); }
+    .ged-client-item.active { background:rgba(124,58,237,.15);border-left:2px solid var(--ap); }
+    .ged-panel { background:var(--sfc);border:1px solid var(--bdr2);border-radius:var(--r); }
+
+    /* ═══════════════════════════════════════════
+       MISC
+    ═══════════════════════════════════════════ */
+    .a-ld { padding:50px;text-align:center;color:var(--muted); }
+    .a-er { padding:50px;text-align:center;color:#fca5a5; }
+    code.monobadge {
+      font-family:monospace;font-size:11.5px;background:rgba(124,58,237,.12);
+      border:1px solid rgba(124,58,237,.2);border-radius:4px;padding:2px 6px;color:#c4b5fd;
+    }
+    .spinner { width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:inline-block; }
+    @keyframes sp { to { transform:rotate(360deg); } }
+    .mt8 { margin-top:8px; } .mt16 { margin-top:16px; } .mt24 { margin-top:24px; }
+
+    @media (max-width:900px) {
+      .plan-cards { grid-template-columns:1fr; }
+      .ged-grid { grid-template-columns:1fr; }
+      .dr-grid2,.dr-grid3 { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="at-box"></div>
+
+<!-- Modal -->
+<div id="am">
+  <div id="am-ov"></div>
+  <div class="am-box">
+    <div class="am-hdr">
+      <div id="am-title"></div>
+      <button class="am-close" id="am-close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="am-body"></div>
+    <div id="am-foot"></div>
+  </div>
+</div>
+
+<!-- Drawer overlay + panel -->
+<div id="a-drawer-ov"></div>
+<div id="a-drawer">
+  <div class="dr-hdr">
+    <div>
+      <div class="dr-title" id="dr-title">Détail client</div>
+      <div class="dr-subtitle" id="dr-subtitle"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div id="dr-status-badge"></div>
+      <button class="dr-close" id="dr-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="dr-tabs" id="dr-tabs">
+    <div class="dr-tab active" data-tab="profil">Profil</div>
+    <div class="dr-tab" data-tab="acces">Accès &amp; Sécurité</div>
+    <div class="dr-tab" data-tab="facturation">Facturation</div>
+    <div class="dr-tab" data-tab="documents">Documents</div>
+    <div class="dr-tab" data-tab="activite">Activité</div>
+  </div>
+  <div class="dr-body" id="dr-body">
+    <!-- Rempli dynamiquement -->
+  </div>
+  <div style="padding:12px 20px;border-top:1px solid var(--bdr2);display:flex;gap:8px;flex-shrink:0;background:#12112b;">
+    <button class="btn btn-pri" id="dr-save-btn">Enregistrer</button>
+    <button class="btn btn-sec" id="dr-impersonate-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Impersonifier
+    </button>
+    <button class="btn btn-sec" id="dr-close-btn" style="margin-left:auto">Fermer</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════ -->
+<aside id="a-sidebar">
+  <div class="a-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Admin Console
+    <span class="a-logo-badge">ADMIN</span>
+  </div>
+
+  <nav class="a-nav">
+    <div class="ni active" data-sec="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="ni" data-sec="clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clients
+    </div>
+    <div class="a-sep"></div>
+    <div class="a-nav-lbl">Configuration</div>
+    <div class="ni" data-sec="api">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      Clés API
+    </div>
+    <div class="ni" data-sec="billing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Facturation
+    </div>
+    <div class="ni" data-sec="ged">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      GED
+    </div>
+    <div class="a-sep"></div>
+    <div class="ni" data-sec="audit">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Journal d'audit
+    </div>
+  </nav>
+
+  <a class="a-app-link" href="/index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Retour à l'application
+  </a>
+
+  <div class="a-sidebar-footer">
+    <div class="a-user-widget">
+      <div class="a-user-avatar">A</div>
+      <div class="a-user-info">
+        <div class="a-user-name" id="a-admin-name">Administrateur</div>
+        <div class="a-user-role">Plateforme Admin</div>
+      </div>
+      <button class="a-logout-btn" id="a-btn-logout" title="Déconnexion">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════════════════════════════════════════
+     MAIN
+════════════════════════════════════════════ -->
+<main id="a-main">
+
+  <div class="a-topbar">
+    <span class="a-topbar-title" id="a-topbar-title">Administration Plateforme</span>
+    <div class="a-topbar-right">
+      <button class="btn btn-sec" id="a-btn-refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Actualiser
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── DASHBOARD ──────────────────────────────── -->
+  <section id="a-sec-dashboard" class="a-sec active">
+    <div class="a-ld">Chargement…</div>
+  </section>
+
+  <!-- ─── CLIENTS ───────────────────────────────── -->
+  <section id="a-sec-clients" class="a-sec">
+    <div class="a-sec-hdr">
+      <h2>Gestion des Clients</h2>
+      <button class="btn btn-pri" id="btn-new-client">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouveau client
+      </button>
+    </div>
+    <div class="fbar">
+      <input class="finp finp-w" id="cl-search" placeholder="🔍 Recherche entreprise / email…" autocomplete="off">
+      <select class="finp" id="cl-filter-status">
+        <option value="">Tous statuts</option>
+        <option value="active">Actif</option>
+        <option value="trial">Essai</option>
+        <option value="suspended">Suspendu</option>
+        <option value="cancelled">Résilié</option>
+      </select>
+      <select class="finp" id="cl-filter-plan">
+        <option value="">Tous plans</option>
+        <option value="bronze">Bronze</option>
+        <option value="silver">Silver</option>
+        <option value="gold">Gold</option>
+      </select>
+      <select class="finp" id="cl-filter-valid">
+        <option value="">Validation…</option>
+        <option value="true">Email validé</option>
+        <option value="false">Non validé</option>
+      </select>
+    </div>
+    <div class="t-wrap">
+      <table class="a-tbl">
+        <thead>
+          <tr>
+            <th>Entreprise</th>
+            <th>SIREN/SIRET</th>
+            <th>Plan</th>
+            <th>Statut</th>
+            <th>Email validé</th>
+            <th>Tokens IA</th>
+            <th>Souscription</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cl-tbody"><tr><td colspan="8" class="t-empty">Chargement…</td></tr></tbody>
+      </table>
+      <div class="t-pages" id="cl-pages"></div>
+    </div>
+  </section>
+
+  <!-- ─── API SETTINGS ──────────────────────────── -->
+  <section id="a-sec-api" class="a-sec">
+    <div class="a-sec-hdr">
+      <h2>Clés API &amp; Configuration</h2>
+      <button class="btn btn-pri" id="btn-new-key">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouvelle clé
+      </button>
+    </div>
+
+    <!-- Global API keys -->
+    <div class="a-card" id="api-keys-card">
+      <div class="a-card-hdr"><h3>Clés API globales</h3></div>
+      <div id="api-keys-list"><div class="a-ld">Chargement…</div></div>
+    </div>
+
+    <!-- Paramètres globaux -->
+    <div class="a-card mt24" id="api-global-card">
+      <div class="a-card-hdr">
+        <h3>Paramètres globaux</h3>
+        <button class="btn btn-pri btn-sm" id="btn-save-api-global">Enregistrer</button>
+      </div>
+      <div class="a-card-body">
+        <div class="api-form-grid">
+          <div class="fg">
+            <label>Clé Anthropic (Claude)</label>
+            <input type="password" id="g-anthropic" placeholder="sk-ant-•••••••••••••••" autocomplete="new-password">
+            <span class="fg-hint">Utilisée pour la génération IA des devis</span>
+          </div>
+          <div class="fg">
+            <label>Clé Google Maps</label>
+            <input type="password" id="g-gmaps" placeholder="AIza•••••••••••••••" autocomplete="new-password">
+            <span class="fg-hint">Calcul des distances chantier</span>
+          </div>
+          <div class="fg">
+            <label>Hôte SMTP</label>
+            <input type="text" id="g-smtp-host" placeholder="smtp.sendgrid.net" autocomplete="off">
+          </div>
+          <div class="fg">
+            <label>Port SMTP</label>
+            <input type="number" id="g-smtp-port" placeholder="587" value="587" autocomplete="off">
+          </div>
+          <div class="fg">
+            <label>Email expéditeur</label>
+            <input type="text" id="g-smtp-from" placeholder="noreply@devis-artisant.fr" autocomplete="off">
+          </div>
+          <div class="fg">
+            <label>Nom expéditeur</label>
+            <input type="text" id="g-smtp-name" placeholder="Devis Artisant" autocomplete="off">
+          </div>
+        </div>
+        <div id="api-global-msg" style="margin-top:10px;font-size:12px;display:none"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BILLING ───────────────────────────────── -->
+  <section id="a-sec-billing" class="a-sec">
+    <div class="a-sec-hdr">
+      <h2>Facturation &amp; Abonnements</h2>
+    </div>
+
+    <!-- Plans éditables -->
+    <div class="a-card-hdr" style="padding:0 0 14px;border-bottom:none">
+      <h3 style="font-size:14px">Offres tarifaires</h3>
+      <button class="btn btn-pri" id="btn-save-plans">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauvegarder les offres
+      </button>
+    </div>
+    <div class="plan-cards" id="plan-cards-container">
+      <!-- Généré par JS -->
+    </div>
+
+    <!-- Abonnements actifs -->
+    <div class="a-card mt16">
+      <div class="a-card-hdr">
+        <h3>Abonnements actifs</h3>
+        <span id="billing-subs-count" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div class="t-wrap" style="border:none;border-radius:0">
+        <table class="a-tbl">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Plan</th>
+              <th>Souscription</th>
+              <th>Prochain prélèvement</th>
+              <th>Dernier paiement</th>
+              <th>Statut paiement</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="billing-subs-tbody"><tr><td colspan="7" class="t-empty">Chargement…</td></tr></tbody>
+        </table>
+        <div class="t-pages" id="billing-subs-pages"></div>
+      </div>
+    </div>
+
+    <!-- Historique paiements -->
+    <div class="a-card mt16">
+      <div class="a-card-hdr">
+        <h3>Historique des prélèvements</h3>
+        <div style="display:flex;gap:8px">
+          <select class="finp" id="billing-pay-filter" style="font-size:11.5px;padding:5px 9px">
+            <option value="">Tous</option>
+            <option value="paid">Payé</option>
+            <option value="pending">En attente</option>
+            <option value="failed">Échoué</option>
+          </select>
+        </div>
+      </div>
+      <div class="t-wrap" style="border:none;border-radius:0">
+        <table class="a-tbl">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Plan</th>
+              <th>Montant</th>
+              <th>IBAN</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="billing-pay-tbody"><tr><td colspan="7" class="t-empty">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── GED ───────────────────────────────────── -->
+  <section id="a-sec-ged" class="a-sec">
+    <div class="a-sec-hdr">
+      <h2>GED — Gestion Documentaire</h2>
+      <div style="display:flex;gap:8px">
+        <select class="finp" id="ged-filter-cat" style="font-size:11.5px;padding:5px 9px">
+          <option value="">Toutes catégories</option>
+          <option value="contract">Contrats</option>
+          <option value="sepa">Mandats SEPA</option>
+          <option value="invoice">Factures</option>
+          <option value="other">Autres</option>
+        </select>
+        <button class="btn btn-pri" id="btn-ged-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          Uploader
+        </button>
+      </div>
+    </div>
+    <div class="ged-grid">
+      <!-- Liste clients -->
+      <div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);margin-bottom:8px">Clients</div>
+        <input class="finp" id="ged-client-search" placeholder="🔍 Filtrer…" style="width:100%;margin-bottom:8px">
+        <div class="ged-clients-list" id="ged-clients-list">
+          <div class="a-ld">Chargement…</div>
+        </div>
+      </div>
+      <!-- Documents du client sélectionné -->
+      <div class="ged-panel" id="ged-panel">
+        <div class="a-card-hdr">
+          <h3 id="ged-panel-title">Sélectionnez un client</h3>
+          <button class="btn btn-pri" id="btn-ged-panel-upload" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter document
+          </button>
+        </div>
+        <div id="ged-docs-list" style="padding:16px">
+          <div style="text-align:center;color:var(--muted);padding:40px">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;display:block;margin:0 auto 12px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Sélectionnez un client pour voir ses documents
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── AUDIT ─────────────────────────────────── -->
+  <section id="a-sec-audit" class="a-sec">
+    <div class="a-sec-hdr">
+      <h2>Journal d'Audit</h2>
+    </div>
+    <div class="fbar">
+      <input class="finp finp-w" id="audit-search-tenant" placeholder="ID tenant (UUID)">
+      <input class="finp finp-w" id="audit-search-action" placeholder="Action (ex: TENANT_SUSPENDED)">
+      <button class="btn btn-sec" id="btn-audit-filter">Filtrer</button>
+    </div>
+    <div class="t-wrap">
+      <table class="a-tbl">
+        <thead>
+          <tr><th>Date</th><th>Action</th><th>Tenant</th><th>Admin</th><th>Détails</th></tr>
+        </thead>
+        <tbody id="audit-tbody"><tr><td colspan="5" class="t-empty">Chargement…</td></tr></tbody>
+      </table>
+      <div class="t-pages" id="audit-pages"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/js/admin-app.js"></script>
+</body>
+</html>

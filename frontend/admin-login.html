@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration — Devis Artisant</title>
+  <script src="/js/admin-auth.js"></script>
+  <script>
+    // Déjà connecté ? → redirection directe
+    (function() {
+      var t = localStorage.getItem('adminToken');
+      if (!t) return;
+      try {
+        var p = JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        if (p.exp && p.exp > Math.floor(Date.now()/1000)) {
+          window.location.replace('/admin.html');
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --admin-primary: #7c3aed;
+      --admin-dark:    #4c1d95;
+      --admin-bg:      #0f0a1a;
+      --admin-panel:   #1a1030;
+      --text-primary:  #f8fafc;
+      --text-muted:    #94a3b8;
+      --border:        rgba(124,58,237,.25);
+      --radius:        10px;
+      --input-bg:      #1e1535;
+      --error:         #ef4444;
+      --success:       #22c55e;
+      --warning:       #f59e0b;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--admin-bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── Panneau gauche ─────────────────── */
+    .panel-left {
+      width: 420px;
+      flex-shrink: 0;
+      background: linear-gradient(160deg, #1a1030 0%, #0f0a1a 60%, #1a0a2e 100%);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 40px;
+      gap: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-left::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 20%, rgba(124,58,237,.18) 0%, transparent 60%),
+                  radial-gradient(ellipse at 70% 80%, rgba(76,29,149,.15) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124,58,237,.15);
+      border: 1px solid rgba(124,58,237,.4);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #c4b5fd;
+    }
+    .admin-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    .panel-left h1 {
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .panel-left h1 span { color: #a78bfa; }
+
+    .panel-left p {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .security-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+    .security-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .security-list li .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #7c3aed;
+      flex-shrink: 0;
+    }
+
+    /* ── Panneau droit ──────────────────── */
+    .panel-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .login-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .login-card .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    /* Steps */
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      color: var(--text-muted);
+    }
+    .step-dot.done  { background: var(--admin-primary); border-color: var(--admin-primary); color: #fff; }
+    .step-dot.active { border-color: var(--admin-primary); color: #a78bfa; }
+    .step-line {
+      flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    /* Form elements */
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-group input:focus { border-color: var(--admin-primary); }
+    .form-group input.error { border-color: var(--error); }
+
+    /* OTP input */
+    .otp-input {
+      text-align: center;
+      font-size: 28px !important;
+      font-weight: 700 !important;
+      letter-spacing: 12px !important;
+      padding: 14px 20px !important;
+    }
+
+    /* Alert */
+    .alert {
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 18px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .alert.show { display: flex; }
+    .alert-error   { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #fca5a5; }
+    .alert-info    { background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.3); color: #c4b5fd; }
+    .alert-success { background: rgba(34,197,94,.1);  border: 1px solid rgba(34,197,94,.3);  color: #86efac; }
+    .alert svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Buttons */
+    .btn-admin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary-admin {
+      background: var(--admin-primary);
+      color: #fff;
+    }
+    .btn-primary-admin:hover:not(:disabled) { background: var(--admin-dark); }
+    .btn-primary-admin:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 12px;
+    }
+    .btn-ghost:hover { color: var(--text-primary); }
+
+    /* Timer */
+    .countdown {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 14px;
+    }
+    .countdown span { color: var(--admin-primary); font-weight: 600; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    /* Footer */
+    .form-footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .form-footer a { color: #a78bfa; text-decoration: none; }
+    .form-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .panel-left { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Panneau gauche -->
+  <div class="panel-left">
+    <div class="admin-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Accès Restreint
+    </div>
+
+    <div style="text-align:center">
+      <h1>Console <span>Administration</span></h1>
+    </div>
+
+    <p>Interface réservée aux administrateurs plateforme. Authentification renforcée obligatoire.</p>
+
+    <ul class="security-list">
+      <li><span class="dot"></span>Authentification en deux étapes (2FA SMS)</li>
+      <li><span class="dot"></span>Session limitée à 4 heures</li>
+      <li><span class="dot"></span>Toutes les actions sont auditées</li>
+      <li><span class="dot"></span>Token admin distinct des tokens utilisateur</li>
+    </ul>
+  </div>
+
+  <!-- Panneau droit -->
+  <div class="panel-right">
+    <div class="login-card">
+
+      <!-- Indicateur d'étapes -->
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot-1">1</div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="dot-2">2</div>
+      </div>
+
+      <!-- ÉTAPE 1 : Identifiants -->
+      <div class="step active" id="step-1">
+        <h2>Connexion Admin</h2>
+        <p class="subtitle">Saisissez vos identifiants administrateur</p>
+
+        <div id="alert-1" class="alert alert-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="alert-1-msg"></span>
+        </div>
+
+        <form id="form-step1" autocomplete="off" novalidate>
+          <div class="form-group">
+            <label for="admin-email">Adresse e-mail</label>
+            <input type="text" id="admin-email" placeholder="admin@plateforme.fr"
+                   autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label for="admin-password">Mot de passe</label>
+            <input type="password" id="admin-password" placeholder="••••••••••••" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn-admin btn-primary-admin" id="btn-step1">
+            Continuer
+          </button>
+        </form>
+
+        <div class="form-footer">
+          <a href="/login.html">← Retour à l'application</a>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 2 : Code OTP -->
+      <div class="step" id="step-2">
+        <h2>Vérification 2FA</h2>
+        <p class="subtitle" id="step2-subtitle">Un code SMS a été envoyé au numéro enregistré</p>
+
+        <div id="alert-dev-otp" class="alert alert-info" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>🛠️ Mode développement — Code OTP : <strong id="dev-otp-code" style="font-size:18px;letter-spacing:4px"></strong></span>
+        </div>
+
+        <div id="alert-2" class="alert alert-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="alert-2-msg"></span>
+        </div>
+
+        <form id="form-step2" autocomplete="off">
+          <div class="form-group">
+            <label for="otp-code">Code à 6 chiffres</label>
+            <input type="text" id="otp-code" class="otp-input"
+                   placeholder="000000"
+                   maxlength="6"
+                   inputmode="numeric"
+                   pattern="[0-9]{6}"
+                   autocomplete="one-time-code"
+                   required>
+          </div>
+          <button type="submit" class="btn-admin btn-primary-admin" id="btn-step2">
+            Vérifier et accéder
+          </button>
+        </form>
+
+        <div class="countdown" id="otp-countdown" style="display:none">
+          Code expirant dans <span id="otp-timer">05:00</span>
+        </div>
+
+        <div style="text-align:center">
+          <button class="btn-ghost" id="btn-back-step1">← Recommencer</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/v1';
+    let tempToken = null;
+    let otpCountdown = null;
+
+    // ── Afficher alerte ──────────────────────────────────────────────────────
+    function showAlert(step, msg, type = 'error') {
+      const el = document.getElementById(`alert-${step}`);
+      const msgEl = document.getElementById(`alert-${step}-msg`);
+      el.className = `alert alert-${type} show`;
+      msgEl.textContent = msg;
+    }
+    function hideAlert(step) {
+      document.getElementById(`alert-${step}`).classList.remove('show');
+    }
+
+    // ── Navigation entre étapes ──────────────────────────────────────────────
+    function goToStep(n) {
+      document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.toggle('active', i + 1 === n);
+      });
+      document.getElementById('dot-1').className = 'step-dot ' + (n > 1 ? 'done' : 'active');
+      document.getElementById('dot-2').className = 'step-dot ' + (n === 2 ? 'active' : '');
+    }
+
+    // ── Countdown OTP ────────────────────────────────────────────────────────
+    function startOtpCountdown(seconds) {
+      const countdownEl = document.getElementById('otp-countdown');
+      const timerEl = document.getElementById('otp-timer');
+      countdownEl.style.display = 'block';
+      clearInterval(otpCountdown);
+
+      let remaining = seconds;
+      function tick() {
+        const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+        const s = String(remaining % 60).padStart(2, '0');
+        timerEl.textContent = `${m}:${s}`;
+        if (remaining <= 0) {
+          clearInterval(otpCountdown);
+          timerEl.textContent = '00:00';
+          showAlert(2, 'Le code a expiré. Recommencez depuis le début.', 'error');
+        }
+        remaining--;
+      }
+      tick();
+      otpCountdown = setInterval(tick, 1000);
+    }
+
+    // ── Étape 1 : login ──────────────────────────────────────────────────────
+    document.getElementById('form-step1').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert(1);
+
+      // Lire les valeurs — attendre un tick pour que Chrome valide l'autofill éventuel
+      await new Promise(r => setTimeout(r, 10));
+      const email    = document.getElementById('admin-email').value.trim();
+      const password = document.getElementById('admin-password').value;
+      const btn      = document.getElementById('btn-step1');
+
+      // Validation manuelle (form a novalidate)
+      if (!email) {
+        document.getElementById('admin-email').classList.add('error');
+        showAlert(1, 'Veuillez saisir votre adresse e-mail.');
+        document.getElementById('admin-email').focus();
+        return;
+      }
+      if (!password) {
+        document.getElementById('admin-password').classList.add('error');
+        showAlert(1, 'Veuillez saisir votre mot de passe.');
+        document.getElementById('admin-password').focus();
+        return;
+      }
+
+      // Nettoyer les erreurs de champ
+      document.getElementById('admin-email').classList.remove('error');
+      document.getElementById('admin-password').classList.remove('error');
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Vérification…';
+
+      try {
+        const data = await AdminAuth.login(email, password);
+        if (!data || !data.tempToken) {
+          throw new Error('Réponse serveur invalide');
+        }
+        tempToken = data.tempToken;
+        goToStep(2);
+        startOtpCountdown(5 * 60); // 5 min
+
+        // Mode dev : afficher le code OTP directement sur l'écran
+        if (data.devOtp) {
+          document.getElementById('dev-otp-code').textContent = data.devOtp;
+          const devBox = document.getElementById('alert-dev-otp');
+          devBox.style.display = 'flex';
+          // Pré-remplir le champ OTP automatiquement
+          document.getElementById('otp-code').value = data.devOtp;
+        } else {
+          document.getElementById('alert-dev-otp').style.display = 'none';
+        }
+
+        document.getElementById('otp-code').focus();
+
+      } catch (err) {
+        let msg;
+        if (err.message === 'Failed to fetch' || err.message === 'NetworkError when attempting to fetch resource.') {
+          msg = 'Impossible de contacter le serveur. Vérifiez que le backend est démarré.';
+        } else if (err.status === 429) {
+          msg = 'Trop de tentatives. Compte verrouillé temporairement.';
+        } else {
+          msg = err.message || 'Identifiants invalides';
+        }
+        showAlert(1, msg);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Continuer';
+      }
+    });
+
+    // Retirer la classe error quand l'utilisateur commence à taper
+    document.getElementById('admin-email').addEventListener('input', () => {
+      document.getElementById('admin-email').classList.remove('error');
+    });
+    document.getElementById('admin-password').addEventListener('input', () => {
+      document.getElementById('admin-password').classList.remove('error');
+    });
+
+    // ── Étape 2 : 2FA ────────────────────────────────────────────────────────
+    document.getElementById('form-step2').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert(2);
+
+      const code = document.getElementById('otp-code').value.replace(/\s/g, '');
+      const btn  = document.getElementById('btn-step2');
+
+      if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+        showAlert(2, 'Le code doit contenir exactement 6 chiffres.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Vérification…';
+
+      try {
+        await AdminAuth.verify2fa(tempToken, code);
+        clearInterval(otpCountdown);
+        showAlert(2, 'Authentification réussie, redirection…', 'success');
+        setTimeout(() => window.location.replace('/admin.html'), 800);
+
+      } catch (err) {
+        const msg = err.status === 429
+          ? 'Trop de tentatives. Réessayez plus tard.'
+          : err.message || 'Code invalide ou expiré';
+        showAlert(2, msg);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Vérifier et accéder';
+      }
+    });
+
+    // ── Retour étape 1 ───────────────────────────────────────────────────────
+    document.getElementById('btn-back-step1').addEventListener('click', () => {
+      clearInterval(otpCountdown);
+      tempToken = null;
+      document.getElementById('otp-code').value = '';
+      hideAlert(1);
+      hideAlert(2);
+      goToStep(1);
+    });
+
+    // ── Formater OTP input ───────────────────────────────────────────────────
+    document.getElementById('otp-code').addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    // Message éventuel passé en paramètre
+    const urlMsg = new URLSearchParams(location.search).get('msg');
+    if (urlMsg) showAlert(1, urlMsg, 'info');
+  </script>
+</body>
+</html>
